@@ -1,0 +1,92 @@
+\input{preambule.tex}
+
+\title{}
+\author{Etienne Boisseau, Olivier Dulcy, Christos Katsoulakis, Eric Lavergne}
+\date{}
+
+\fancypagestyle{theme}{
+\fancyhead[L]{}
+\fancyhead[R]{ENSAE}
+\fancyhead[C]{Modèle de langues neuronaux} 
+\fancyfoot[C]{\thepage}
+\fancyfoot[R]{}
+\fancyfoot[L]{2019-2020}
+\renewcommand{\footrulewidth}{1pt}
+\renewcommand{\headrulewidth}{1pt}}
+\pagestyle{theme}
+
+\begin{document}
+
+\tableofcontents
+
+\section{Les modèles de langues neuronaux}
+
+\subsection{Cas général}
+
+\begin{definition}
+  Un modèle de langue est une distribution de probabilité d'une séquence de mots.
+\end{definition}
+
+Dans un modèle de langue, il s'agit d'attribuer une probabilité $\P$ pour chaque mot ou séquence de mots $s$ dans une langue.
+Un modèle de langue va donc permettre de modéliser l'agencement (ou la distribution) des mots dans une langue. 
+
+Connaissant la probabilité de chaque mot, nous souhaitons prédire l'apparition d'un mot sachant une séquence de mots. On parle alors de méthode \og générative \fg{}. Le fait de prédire des séquences de mots va nous permettre de générer du texte.
+Les applications de cette méthode sont diverses :
+\begin{itemize}
+  \item traduction
+  \item résumé
+\end{itemize}
+Autrement dit, quelle est la probabilité d'obtenir d'observer un mot ou un séquence sachant une séquence de mots déjà observée? Mathématiquement, nous nous intéresserons à une probabilité conditionnelle. 
+
+Soit $s$ une séquence de $N$ mots, notés $m_1, \ldots, m_N$. La probabilité d'observer la séquence $s$ dans une langue dans l'absolue est calculée comme suit :
+
+\begin{align*}
+  \P(s) &= \P(m_1\ldots m_N) \\
+  &= \P(m_N \vert m_1\ldots m_{N-1})\P(m_1\ldots m_{N-1}) \\
+  &= \P(m_N \vert m_1\ldots m_{N-1})\P(m_{N-1}\vert m_1\ldots m_{N-2}) \P(m_1 \ldots m_{N-2}) \\ 
+  &=\prod_{i=1}^N \P(m_i \vert m_1\ldots m_{i-1}) \text{ (récurrence)}
+\end{align*}
+
+Si la séquence de mots est longue, cela devient rapidement coûteux en mémoire (taille de type factoriel). En effet, il faut être capable d'estimer la probabilité $\P(m_i \vert m_1\ldots m_{i-1})$. Nous sommes donc amenés à effectuer des approximations dans les calculs pour estimer ces probabilités. Ces différentes estimations conduisent à la définition de différents modèles de langues neuronaux.
+
+ Nous distinguons les modèles de langue suivants :
+
+\begin{itemize}
+  \item les modèles $n$-grams
+  \item les modèles Neural Network (NN)
+\end{itemize}
+
+\subsection{Modèle $n$-gram}
+Dans un modèle $n$-gram, nous supposons que la probabilité d'apparition du mot $m-i$ ne dépend que de $n-1$ prédécesseurs.
+
+\begin{itemize}
+  \item Cas $n=1$ : Modèle unigram : $\P(s) = \prod_{i=1}^N \P(m_i)$
+  \item Cas $n=2$ : Modèle bigram : $\P(s) = \prod_{i=1}^N \P(m_i\vert m_{i-1})$
+  \item Cas $n=3$ : Modèle trigram : $\P(s) = \prod_{i=1}^N \P(m_i\vert m_{i-2}m_{i-1})$
+  \item Cas $n > 3$ : Modèle $n$-gram : $\P(s) = \prod_{i=1}^N \P(m_i\vert m_{i-(n-1)}\ldots m_{i-1})$
+\end{itemize}
+
+Il est cependant très difficile de calculer ces probabilités dans l'absolue. 
+Nous estimons alors ces probabilités sur un corpus de textes et nous supposons que le corpus de textes reflète la langue dans l'absolue.
+Nous devons donc disposer d'un très grand corpus de textes. Il s'agit là d'une approche statistique.
+
+Etant donné que nous travaillons sur un corpus de textes fini, nous utilisons naturellement pour probabilité la mesure de comptage. Ainsi, le calcul de probabilité conditionnelle devient :
+
+\[ \P(m_i\vert m_{i-(n-1)}\ldots m_{i-1}) = \frac{\vert m_{i-(n-1)}\ldots m_{i-1}m_i\vert}{\vert m_{i-(n-1)}\ldots m_{i-1}\vert} \]
+
+\textbf{Limitations :} Etant donné que nous travaillons sur un corpus fini, nous avons une combinaison de mots finis. Il est possible qu'un mot qui n'apparaît pas dans le modèle. Sa probabilité d'apparition est donc nulle : $\P(m_k) = 0$. On parle de sparcité. Cette probabilité nulle pose problème : toute séquence de mots qui contient un mot qui n'est pas dans le corpus a une probabilité égale à 0 d'apparaître.
+Notre modèle reconnaît donc uniquement des séquences connus.
+
+Pour palier ce problème et pouvoir généraliser à des séquences de mots non connus, nous pouvons effectuer un \og lissage \fg{}, qui consiste à attribuer une valeur de probabilité non nulle pour les mots n'apparaissant jamais dans le corpus.
+
+\subsection{Modèle Neural Network}
+
+Les modèles $n$-gram utilisent une approche statistique pour estimer les probabilités d'apparition d'une séquence de mots. Pour qu'elle soit efficace, il est nécessaire d'avoir un grand corpus de textes.
+Une autre approche de représentation des probabilités est d'utiliser les réseaux de neurones.
+L'idée est de capturer les liens (ou caractéristiques) que les mots peuvent avoir entre eux via un réseau de neurones. Ces liens sont représentés par les différentes connexions qui existent entre les neurones du réseau.
+On parle de \og représentation distribuée \fg{}.
+Nous passons alors d'une représentation discrète à une représentation continue à travers un vecteur. 
+Chaque mot est représentée par un vecteur dans $\R^m$. Cette représentation continue permet de représenter énormément de combinaisons possibles en modifiant très légèrement le vecteur qui représente la séquence de mots.
+
+
+\end{document}

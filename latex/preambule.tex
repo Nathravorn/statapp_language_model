@@ -1,0 +1,163 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[francais]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{stmaryrd}
+\usepackage{amssymb}
+\usepackage{amsmath}
+%\usepackage[landscape, twocolumn,left=15mm,top=15mm,bottom=15mm,right=15mm]{geometry}
+\usepackage{geometry}
+\usepackage{mathrsfs}
+\usepackage{framed}
+\usepackage{enumerate}
+\usepackage{eurosym}
+\usepackage{fancyhdr} %Faire les entêtes et bas de page
+%\usepackage{indentfirst} %Pour avoir toujours une indentation au début d'un paragraphe, section...
+\usepackage{listings}%pour insérer du code source
+\usepackage{cancel}
+\usepackage{afterpage}
+\usepackage{pifont}
+\usepackage{hyperref}
+\usepackage{lscape}% Pour pouvoir changer en paysage avec env. landscape
+\usepackage{pdflscape} %support pdfLatex
+\usepackage{diagbox} %Pour faire une diago dans une cell
+\usepackage{xcolor} %Insérer un peu de la couleur
+\usepackage{enumitem} % Pour modifier la puce des énumérations
+\usepackage{array} %Pour faire des beaux tableaux
+\usepackage{nicefrac} % Pour avoir Z/nZ
+\usepackage{tabularx}%Pour avoir des tableaux à dimensions réglables
+\usepackage{pdfpages}%Importer des pdfs
+\usepackage{ulem}
+\usepackage{color}
+\usepackage{pgf,tikz,pgfplots}
+\pgfplotsset{compat=1.15}
+\usepackage{mathrsfs}
+\usetikzlibrary{arrows}
+\usepackage{subfigure}
+\usepackage{fancybox}
+%\usepackage{sistyle}
+\usepackage[nottoc, notlof, notlot]{tocbibind}
+\usepackage{bbm} % Pour avoir une fonction indicatrice \mathbbm{1}
+%Utilisez le package tocbibind, capable de créer des entrées pour la bibliographie, l'index et aussi la table des matières (!), les listes des figures et des tables. Ces trois derniers éléments n'étant pas du meilleur effet, on lui pourra passer les options nottoc, notlof et notlot.
+
+%\usepackage[square,numbers,sort&compress]{natbib}
+%\usepackage[titles]{tocloft}
+%\setlength{\cftbeforesecskip}{3pt plus.2pt}
+%\cftpagenumbersoff{section} % Pour supprimer les numéros
+%\cftpagenumbersoff{subsection} % Pour supprimer les numéros
+\usepackage{mdframed} %Pour faire une ligne verticale
+
+
+
+\geometry{hmargin=1.3cm,top=1.9cm,bottom=1.9cm}
+
+\newcommand{\der}{\mathrm{d}}
+\newcommand{\dps}{\displaystyle}
+\newcommand{\ptitle}[1]{\ding{113} \textsc{#1}}
+
+\newcommand{\kbt}{k_\mathrm{B}\mathrm{T}}
+\newcommand{\G}{\mathrm{G}}
+\newcommand{\C}{\mathrm{C}}
+\newcommand{\M}{\mathrm{M}}
+\newcommand{\K}{\mathrm{K}}
+\newcommand{\EI}{\mathrm{U}}
+\newcommand{\Entr}{\mathrm{S}}
+\renewcommand{\S}{\mathrm{S}}
+\newcommand{\N}{\mathrm{N}}
+\newcommand{\Z}{\mathrm{Z}}
+\newcommand{\Cp}{\mathrm{Cp}}
+
+
+\newcommand{\ei}{\mathrm{E}_i}
+\newcommand{\zun}{\mathrm{Z}_1}
+
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Normale}{\mathcal{N}}
+\newcommand{\proj}{\mathrm{P}}
+\newcommand{\cov}{\mathrm{cov}}
+%\newcommand{\limsup}{\mathrm{limsup}}
+
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\V}{\mathbb{V}}
+\newcommand{\Vect}{\mathrm{Vect}}
+\newcommand{\F}{\mathcal{F}}
+\newcommand{\B}{\mathcal{B}}
+
+\newcommand{\Q}[1]{\textbf{Question #1 : }}
+\newcommand{\Rq}{\textbf{Remarque : }}
+\newcommand{\Def}{\textbf{Définition : }}
+\newcommand{\Prop}{\textbf{Propriété : }}
+\newcommand{\Props}{\textbf{Propriétés : }}
+\newcommand{\Voc}{\textbf{Vocabulaire : }}
+\newcommand{\Cor}{\textbf{Corollaire : }}
+\newcommand{\Th}{\textbf{Théorème : }}
+\newcommand{\Preuve}{\noindent{}\textbf{Preuve : }}
+
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+
+
+\newtheorem{definition}{Définition}[section]
+\newtheorem{prop}{Propriété}[section]
+\newtheorem{voc}{section}[section]
+\newtheorem{thm}{Théorème}[section]
+\newtheorem{cor}{Corollaire}[thm]
+\newtheorem{lem}{Lemme}[thm]
+\newtheorem{ex}{Exemple}[section]
+\newtheorem{exo}{Exercice}[section]
+%\setlength{\parindent}{0pt}
+\newcommand{\ud}{\mathrm{d}}
+
+\newcommand{\intdr}{\int\hspace{-9.6pt}\bigcirc\hspace{-10pt}\int\hspace{-4.5pt}}
+\newcommand{\oiint}{{\int \hskip -3 mm \int \hskip -5 mm \bigcirc}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setlength{\shadowsize}{2pt}
+\newcommand{\Cadre}[1]{
+\begin{center}
+\setlength{\fboxsep}{10pt}
+\shadowbox{
+\begin{minipage}{17cm}
+#1
+\end{minipage}
+}
+\end{center}}
+
+
+\newcommand{\cadre}[2]{
+\begin{center}
+\boxput*(0,1){\colorbox{white}{\textsc{#1}}}
+{
+\setlength{\fboxsep}{10pt}
+\shadowbox{
+\begin{minipage}{13.7cm}
+#2
+\end{minipage}
+}}
+\end{center}}
+
+\newcommand{\cadreOval}[2]{
+\begin{center}
+\boxput*(0,1){\colorbox{white}{\textsc{#1}}}
+{
+\setlength{\fboxsep}{10pt}
+\Ovalbox{
+\begin{minipage}{10.7cm}
+#2
+\end{minipage}
+}}
+\end{center}}
+
+\newcommand{\ligne}{\begin{center}
+	\rule{\linewidth}{.5pt}
+\end{center}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newmdenv[topline=false,rightline=false]{leftbot}
+
+%Pour renommer le sommaire
+\addto\captionsfrench{% Replace "english" with the language you use
+  \renewcommand{\contentsname}%
+    {Sommaire}%
+}
