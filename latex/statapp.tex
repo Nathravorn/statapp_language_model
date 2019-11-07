@@ -23,29 +23,68 @@
 
 \subsection{Cas général}
 
+\subsubsection{Construction de l'espace probabilisé}
+
+
 \begin{definition}
-  Un modèle de langue est une distribution de probabilité d'une séquence de mots.
+  On appelle vocabulaire un ensemble fini quelconque, noté $V = \{ s_1, \ldots, s_{\vert V \vert} \}$. Les $s_i$ sont appelés symboles.
+  On note $\varepsilon$ le symbole vide qui n'appartient pas à $V$.
 \end{definition}
 
-Dans un modèle de langue, il s'agit d'attribuer une probabilité $\P$ pour chaque mot ou séquence de mots $s$ dans une langue.
-Un modèle de langue va donc permettre de modéliser l'agencement (ou la distribution) des mots dans une langue. 
-
-Connaissant la probabilité de chaque mot, nous souhaitons prédire l'apparition d'un mot sachant une séquence de mots. On parle alors de méthode \og générative \fg{}. Le fait de prédire des séquences de mots va nous permettre de générer du texte.
-Les applications de cette méthode sont diverses :
+Exemple de symboles:
 \begin{itemize}
-  \item traduction
-  \item résumé
+\item Un caractère
+\item Un mot
+\item Un bit
 \end{itemize}
-Autrement dit, quelle est la probabilité d'obtenir d'observer un mot ou un séquence sachant une séquence de mots déjà observée? Mathématiquement, nous nous intéresserons à une probabilité conditionnelle. 
 
-Soit $s$ une séquence de $N$ mots, notés $m_1, \ldots, m_N$. La probabilité d'observer la séquence $s$ dans une langue dans l'absolue est calculée comme suit :
+Exemple de vocabulaire :
+  \begin{itemize}
+      \item Ensemble des mots de la langue française
+      \item Ensemble des caractères unicode
+  \end{itemize}
 
+\begin{definition}
+Un texte est un élément de $V^L$, où $L \in \N^*$.
+\end{definition}
+
+On cherche à définir une probabilité sur l'ensemble des textes. Définissons notre espace de probabilité.
+
+\begin{definition}
+On appelle l'ensemble des textes $\Omega = \bigcup_{L=1}^{+\infty} V^L$.
+On note $\mathcal{A} = \sigma\left(\{\{T\} \Vert t \in \Omega \} \right)$, une tribu sur $\Omega$.
+\end{definition}
+
+On note $L : T \in \Omega \mapsto \vert T \vert$ la variable aléatoire qui associe à un texte sa longueur.
+On définit les $(X_n)_{n \in \N^*}$ comme :
+
+$\forall i \in \N^*, X_i(T) = \begin{cases}
+  i\text{-ème symbole de } T \text{ si } i \leq L(T) \\
+  \varepsilon \text{ si } i > L(T) 
+\end{cases}$
+
+\vspace{0.4cm}
+
+On suppose qu'il existe une probabilité $\P$ sur l'espace probabilisable $(\Omega, \mathcal{A})$.
+On dispose d'un échantillon de textes distribué selon la mesure $\P$ et on cherche à estimer $\P$ par une mesure de probabilité $\widehat{\P}$.
+
+On appelle $\widehat{\P}$ un modèle de langue. En raison de la nature séquentielle du langage, on le construit en pratique en conditionnant sur les mots précédents du texte.
+
+
+\subsubsection{Construction d'un modèle de langue par probabilités conditionnelles}
+Soit un texte $T=s_1\ldots s_L \in V^L$, où $L \in\N^*$. 
+
+La probabilité d'observer $T$ s'écrit :
 \begin{align*}
-  \P(s) &= \P(m_1\ldots m_N) \\
-  &= \P(m_N \vert m_1\ldots m_{N-1})\P(m_1\ldots m_{N-1}) \\
-  &= \P(m_N \vert m_1\ldots m_{N-1})\P(m_{N-1}\vert m_1\ldots m_{N-2}) \P(m_1 \ldots m_{N-2}) \\ 
-  &=\prod_{i=1}^N \P(m_i \vert m_1\ldots m_{i-1}) \text{ (récurrence)}
+  \P(T) &= \P\left(\bigcap_{i=1}^L X_i=s_i \cap \bigcap_{i=L+1}^{+\infty} X_i = \varepsilon\right) \\
+  &= \P\left(\bigcap_{i=1}^L X_i=s_i \cap X_{L+1} = \varepsilon  \right) \text{ par construction des } X_i\\
+  &= \P(X_1 = s_1 \cap \ldots \cap X_L = s_L \cap X_{L+1} = \varepsilon) \\
+  &= \P(X_{L+1}=\varepsilon \vert X_1=s_1,\ldots, X_L=s_L)\P(X_1=s_1,\ldots, X_L=s_L) \\
+  &= \P(X_{L+1}=\varepsilon \vert X_1=s_1,\ldots, X_L=s_L)\P(X_L=s_L\vert X_1=s_1,\ldots, X_{L-1}=s_{L-1}) \times \\
+  & \hspace{9cm}\P(X_1=s_1 ,\ldots, X_{L-1}=s_{L-1}) \\ 
+  &=\prod_{i=1}^{L+1} \P(X_i=s_i \vert X_1=s_1,\ldots, X_{i-1}=s_{i-1}) \text{ en posant } s_{L+1} = \varepsilon
 \end{align*}
+
 
 Si la séquence de mots est longue, cela devient rapidement coûteux en mémoire (taille de type factoriel). En effet, il faut être capable d'estimer la probabilité $\P(m_i \vert m_1\ldots m_{i-1})$. Nous sommes donc amenés à effectuer des approximations dans les calculs pour estimer ces probabilités. Ces différentes estimations conduisent à la définition de différents modèles de langues neuronaux.
 
