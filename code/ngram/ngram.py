@@ -121,3 +121,33 @@ class NGramModel:
             previous_words += (next_word,)
         return previous_words
     
+    def generate_beam(self, nb_words_to_gen, previous_words, k=1):
+        """Generate a sequence of words starting from given starting words using beam prediction.
+        
+        Args:
+            nb_words_to_gen (int): Number of words to generate past the starting sequence.
+            previous_words (str or iterable): List of tokens to start from. If string, must be
+                sequence of tokens separated by spaces.
+            k (int): parameter of Beam search method, i.e. number of best sequences kept at each step
+        
+        Returns:
+            tuple of strings : Generated tokens.
+        """
+        # Sanitize input
+        if isinstance(previous_words, str):
+            previous_words = previous_words.split(" ")
+        previous_words = tuple(previous_words)
+        
+        k_best_sequences = [[previous_words,1]]
+        for i in range(nb_words_to_gen):
+            candidates = []
+            for best_sequence in k_best_sequences:
+                previous_words, previous_probability = best_sequence
+                for word in self.vocabulary:
+                    sequence_probability = previous_probability * self.get_word_probability(word, previous_words[-(self.n-1):])
+                    sequence_words = previous_words + (word,)
+                    candidates.append([sequence_words, sequence_probability])
+            ordered = sorted(candidates, key=lambda tup:tup[1])
+            k_best_sequences = ordered[-k:]
+        return k_best_sequences[-1][0]
+    
