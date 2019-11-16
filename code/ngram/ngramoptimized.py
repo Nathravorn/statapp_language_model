@@ -64,26 +64,19 @@ class NGramModel:
         return proba
     
     
-    def predict_probas(self, previous_words):
-        """Get all conditional word probabilities given previous n-1 words.
+    def predict_possible_next_words_probas(self, previous_words):
+        """Get all conditional word probabilities greater than zero given previous n-1 words.
         
         Args:
             previous_words (tuple of strings): Previous sequence of tokens. Must be of length at least n-1.
         
         Returns:
-            list: vector of probabilities of same size as vocabulary.
+            dictionnary: conditional probabilities (float) with keys .
         """
         assert len(previous_words) >= self.n - 1, "Error in probability calculation: invalid number of previous words: {}".format(len(previous_words))
-
-        cond_probas=[]
-        for word in self.vocabulary:
-            cond_probas.append(
-                self.get_word_probability(
-                    word,
-                    previous_words[-(self.n-1):]
-                )
-            )
-        return cond_probas
+        
+        #Un peu sale mais évite deux parcours du dico ; idee de code plus propre ?
+        return self.conditional_probabilities.get(previous_words[-(self.n-1):], {choice(self.vocabulary): 1})
 
     
     def generate_greedy(self, nb_words_to_gen, previous_words):
@@ -103,11 +96,8 @@ class NGramModel:
         previous_words = tuple(previous_words)
         
         for i in range(nb_words_to_gen):
-            cond_probas = self.predict_probas(previous_words)
             # Sélectionne le mot qui maximise la probabilité conditionnelle (greedy search)
-            next_word = self.vocabulary[np.argmax(cond_probas)]
-            #Un peu sale mais évite deux parcours du dico ; idee de code plus propre ?
-            possible_next_words_probas = self.conditional_probabilities.get(previous_words[-(self.n-1):], {choice(self.vocabulary): 1})
+            possible_next_words_probas = self.predict_possible_next_words_probas(previous_words)
             next_word = max(possible_next_words_probas, key=possible_next_words_probas.get)
             previous_words += (next_word,)
         return previous_words
@@ -133,11 +123,13 @@ class NGramModel:
         previous_words = tuple(previous_words)
         
         for i in range(nb_words_to_gen):
-            cond_probas = self.predict_probas(previous_words)
+            possible_next_words_probas = self.predict_possible_next_words_probas(previous_words)
+            cond_probas = list(possible_next_words_probas.values())
             cond_probas = np.array(cond_probas)**power
             cond_probas = cond_probas / cond_probas.sum()
+            possible_next_words = np.array(list(possible_next_words_probas.keys()))
             # Sample a word from conditional distribution
-            next_word = np.random.choice(self.vocabulary, p=cond_probas)
+            next_word = np.random.choice(possible_next_words, p=cond_probas)
             previous_words += (next_word,)
         return previous_words
     
@@ -164,8 +156,9 @@ class NGramModel:
             candidates = []
             for best_sequence in k_best_sequences:
                 previous_words, previous_probability = best_sequence
-                for word in self.vocabulary:
-                    sequence_probability = previous_probability * self.get_word_probability(word, previous_words[-(self.n-1):])
+                possible_next_words_probas = self.predict_possible_next_words_probas(previous_words)
+                for word, word_cond_probability in possible_next_words_probas.items():
+                    sequence_probability = previous_probability * word_cond_probability
                     sequence_words = previous_words + (word,)
                     candidates.append([sequence_words, sequence_probability])
             ordered = sorted(candidates, key=lambda tup:tup[1])
