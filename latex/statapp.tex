@@ -25,6 +25,7 @@
 
 \subsubsection{Construction de l'espace probabilisé}
 
+\underline{\textbf{Notation :}} On note $A \mapsto \vert A \vert$ la fonction qui associe à un ensemble $A$ son cardinal.
 
 \begin{definition}
   On appelle vocabulaire un ensemble fini quelconque, noté $V = \{ s_1, \ldots, s_{\vert V \vert} \}$. Les $s_i$ sont appelés symboles.
@@ -45,14 +46,14 @@ Exemple de vocabulaire :
   \end{itemize}
 
 \begin{definition}
-Un texte est un élément de $V^L$, où $L \in \N^*$.
+Un texte $T$ est un élément de $V^L$, où $L \in \N^*$.
 \end{definition}
 
 On cherche à définir une probabilité sur l'ensemble des textes. Définissons notre espace de probabilité.
 
 \begin{definition}
 On appelle l'ensemble des textes $\Omega = \bigcup_{L=1}^{+\infty} V^L$.
-On note $\mathcal{A} = \sigma\left(\{\{T\} \Vert t \in \Omega \} \right)$, une tribu sur $\Omega$.
+On note $\mathcal{A} = \sigma\left(\{\{T\} \Vert T \in \Omega \} \right)$, une tribu sur $\Omega$.
 \end{definition}
 
 On note $L : T \in \Omega \mapsto \vert T \vert$ la variable aléatoire qui associe à un texte sa longueur.
@@ -86,9 +87,9 @@ La probabilité d'observer $T$ s'écrit :
 \end{align*}
 
 
-Si la séquence de mots est longue, cela devient rapidement coûteux en mémoire (taille de type factoriel). En effet, il faut être capable d'estimer la probabilité $\P(m_i \vert m_1\ldots m_{i-1})$. Nous sommes donc amenés à effectuer des approximations dans les calculs pour estimer ces probabilités. Ces différentes estimations conduisent à la définition de différents modèles de langues neuronaux.
+Nous serons amenés à effectuer des approximations dans les calculs pour estimer ces probabilités. Ces différentes estimations conduisent à la définition de différents modèles de langues neuronaux.
 
- Nous distinguons les modèles de langue suivants :
+Nous distinguons les modèles de langue suivants :
 
 \begin{itemize}
   \item les modèles $n$-grams
@@ -96,17 +97,19 @@ Si la séquence de mots est longue, cela devient rapidement coûteux en mémoire
 \end{itemize}
 
 \subsection{Modèle $n$-gram}
-Dans un modèle $n$-gram, nous supposons que la probabilité d'apparition du mot $m-i$ ne dépend que de $n-1$ prédécesseurs.
+Dans un modèle $n$-gram, nous faisons l'hypothèse simplificatrice que la probabilité d'apparition du mot $s_i$ ne dépend que de $n-1$ prédécesseurs. Ainsi,
+
+\[ \P(X_i=s_i \vert X_1=s_1,\ldots, X_{i-1}=s_{i-1}) = \P(X_i=s_i \vert X_{i-(n-1)}=s_{i-(n-1)},\ldots, X_{i-1}=s_{i-1}) \]
 
 \begin{itemize}
-  \item Cas $n=1$ : Modèle unigram : $\P(s) = \prod_{i=1}^N \P(m_i)$
-  \item Cas $n=2$ : Modèle bigram : $\P(s) = \prod_{i=1}^N \P(m_i\vert m_{i-1})$
-  \item Cas $n=3$ : Modèle trigram : $\P(s) = \prod_{i=1}^N \P(m_i\vert m_{i-2}m_{i-1})$
-  \item Cas $n > 3$ : Modèle $n$-gram : $\P(s) = \prod_{i=1}^N \P(m_i\vert m_{i-(n-1)}\ldots m_{i-1})$
+  \item Cas $n=1$ : Modèle unigram : $\P(s) = \prod_{i=1}^N \P(s_i)$
+  \item Cas $n=2$ : Modèle bigram : $\P(s) = \prod_{i=1}^N \P(s_i\vert s_{i-1})$
+  \item Cas $n=3$ : Modèle trigram : $\P(s) = \prod_{i=1}^N \P(s_i\vert s_{i-2}s_{i-1})$
+  \item Cas $n > 3$ : Modèle $n$-gram : $\P(s) = \prod_{i=1}^N \P(s_i\vert s_{i-(n-1)}\ldots s_{i-1})$
 \end{itemize}
 
-Il est cependant très difficile de calculer ces probabilités dans l'absolue. 
-Nous estimons alors ces probabilités sur un corpus de textes et nous supposons que le corpus de textes reflète la langue dans l'absolue.
+Il est cependant très difficile de calculer ces probabilités dans l'absolu. 
+Nous estimons alors ces probabilités sur un corpus de textes et nous supposons que le corpus de textes reflète la langue dans l'absolu.
 Nous devons donc disposer d'un très grand corpus de textes. Il s'agit là d'une approche statistique.
 
 Etant donné que nous travaillons sur un corpus de textes fini, nous utilisons naturellement pour probabilité la mesure de comptage. Ainsi, le calcul de probabilité conditionnelle devient :
@@ -114,9 +117,9 @@ Etant donné que nous travaillons sur un corpus de textes fini, nous utilisons n
 \[ \P(m_i\vert m_{i-(n-1)}\ldots m_{i-1}) = \frac{\vert m_{i-(n-1)}\ldots m_{i-1}m_i\vert}{\vert m_{i-(n-1)}\ldots m_{i-1}\vert} \]
 
 \textbf{Limitations :} Etant donné que nous travaillons sur un corpus fini, nous avons une combinaison de mots finis. Il est possible qu'un mot qui n'apparaît pas dans le modèle. Sa probabilité d'apparition est donc nulle : $\P(m_k) = 0$. On parle de sparcité. Cette probabilité nulle pose problème : toute séquence de mots qui contient un mot qui n'est pas dans le corpus a une probabilité égale à 0 d'apparaître.
-Notre modèle reconnaît donc uniquement des séquences connus.
+Notre modèle reconnaît donc uniquement des séquences connues.
 
-Pour palier ce problème et pouvoir généraliser à des séquences de mots non connus, nous pouvons effectuer un \og lissage \fg{}, qui consiste à attribuer une valeur de probabilité non nulle pour les mots n'apparaissant jamais dans le corpus.
+Pour pallier ce problème et pouvoir généraliser à des séquences de mots non connus, nous pouvons effectuer un \og lissage \fg{}, qui consiste à attribuer une valeur de probabilité non nulle pour les mots n'apparaissant jamais dans le corpus.
 
 \subsection{Modèle Neural Network}
 
