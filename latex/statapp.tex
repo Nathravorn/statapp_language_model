@@ -101,25 +101,26 @@ Dans un modèle $n$-gram, nous faisons l'hypothèse simplificatrice que la proba
 
 \[ \P(X_i=s_i \vert X_1=s_1,\ldots, X_{i-1}=s_{i-1}) = \P(X_i=s_i \vert X_{i-(n-1)}=s_{i-(n-1)},\ldots, X_{i-1}=s_{i-1}) \]
 
+\vspace{0.4cm}
+
 \begin{itemize}
-  \item Cas $n=1$ : Modèle unigram : $\P(s) = \prod_{i=1}^N \P(s_i)$
-  \item Cas $n=2$ : Modèle bigram : $\P(s) = \prod_{i=1}^N \P(s_i\vert s_{i-1})$
-  \item Cas $n=3$ : Modèle trigram : $\P(s) = \prod_{i=1}^N \P(s_i\vert s_{i-2}s_{i-1})$
-  \item Cas $n > 3$ : Modèle $n$-gram : $\P(s) = \prod_{i=1}^N \P(s_i\vert s_{i-(n-1)}\ldots s_{i-1})$
+  \item Cas $n=1$ : Modèle unigram : $\P(T) = \prod_{i=1}^{L+1} \P(X_i = s_i)$
+  \item Cas $n=2$ : Modèle bigram : $\P(T) = \prod_{i=1}^{L+1} \P(X_i = s_i\vert X_{i-1} = s_{i-1})$
+  \item Cas $n=3$ : Modèle trigram : $\P(T) = \prod_{i=1}^{L+1} \P(X_i = s_i\vert X_{i-2} = s_{i-2}, X_{i-1} = s_{i-1})$
+  \item Cas $n > 3$ : Modèle $n$-gram : $\P(T) = \prod_{i=1}^{L+1} \P(X_i = s_i\vert X_{i-(n-1)} = s_{i-(n-1)}, \ldots, X_{i-1} = s_{i-1})$
 \end{itemize}
 
-Il est cependant très difficile de calculer ces probabilités dans l'absolu. 
-Nous estimons alors ces probabilités sur un corpus de textes et nous supposons que le corpus de textes reflète la langue dans l'absolu.
-Nous devons donc disposer d'un très grand corpus de textes. Il s'agit là d'une approche statistique.
+Nous estimons ces probabilités sur un corpus de textes et nous supposons que le corpus de textes reflète la langue dans l'absolu, 
+ce qui sera le cas si nous disposons d'un très grand corpus de textes . Il s'agit là d'une approche statistique.
 
 Etant donné que nous travaillons sur un corpus de textes fini, nous utilisons naturellement pour probabilité la mesure de comptage. Ainsi, le calcul de probabilité conditionnelle devient :
 
-\[ \P(m_i\vert m_{i-(n-1)}\ldots m_{i-1}) = \frac{\vert m_{i-(n-1)}\ldots m_{i-1}m_i\vert}{\vert m_{i-(n-1)}\ldots m_{i-1}\vert} \]
+\[ \P(X_i = s_i\vert X_{i-(n-1)} = s_{i-(n-1)}, \ldots, X_{i-1} = s_{i-1}) = \frac{\vert X_{i-(n-1)} = s_{i-(n-1)}, \ldots, X_{i-1} = s_{i-1}, X_i = s_i\vert}{\vert X_{i-(n-1)} = s_{i-(n-1)},\ldots, X_{i-1} = s_{i-1}\vert} \]
 
-\textbf{Limitations :} Etant donné que nous travaillons sur un corpus fini, nous avons une combinaison de mots finis. Il est possible qu'un mot qui n'apparaît pas dans le modèle. Sa probabilité d'apparition est donc nulle : $\P(m_k) = 0$. On parle de sparcité. Cette probabilité nulle pose problème : toute séquence de mots qui contient un mot qui n'est pas dans le corpus a une probabilité égale à 0 d'apparaître.
+\textbf{Limitations :} Etant donné que nous travaillons sur un corpus fini, nous avons une combinaison de mots finis. Il est possible qu'un mot qui n'apparaît pas dans le modèle. Sa probabilité d'apparition est donc nulle : $\P(X_k = s_k) = 0$. On parle de sparcité. Cette probabilité nulle pose problème : toute séquence de mots qui n'apparaît pas dans le corpus a une probabilité égale à 0 d'apparaître.
 Notre modèle reconnaît donc uniquement des séquences connues.
 
-Pour pallier ce problème et pouvoir généraliser à des séquences de mots non connus, nous pouvons effectuer un \og lissage \fg{}, qui consiste à attribuer une valeur de probabilité non nulle pour les mots n'apparaissant jamais dans le corpus.
+Pour pallier ce problème et pouvoir généraliser à des séquences de mots non connues, nous pouvons effectuer un \og lissage \fg{}, qui consiste à attribuer une valeur de probabilité non nulle pour les mots n'apparaissant jamais dans le corpus.
 
 \subsection{Modèle Neural Network}
 
