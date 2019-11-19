@@ -124,12 +124,26 @@ Pour pallier ce problème et pouvoir généraliser à des séquences de mots non
 
 \subsection{Modèle Neural Network}
 
-Les modèles $n$-gram utilisent une approche statistique pour estimer les probabilités d'apparition d'une séquence de mots. Pour qu'elle soit efficace, il est nécessaire d'avoir un grand corpus de textes.
-Une autre approche de représentation des probabilités est d'utiliser les réseaux de neurones.
-L'idée est de capturer les liens (ou caractéristiques) que les mots peuvent avoir entre eux via un réseau de neurones. Ces liens sont représentés par les différentes connexions qui existent entre les neurones du réseau.
-On parle de \og représentation distribuée \fg{}.
-Nous passons alors d'une représentation discrète à une représentation continue à travers un vecteur. 
-Chaque mot est représentée par un vecteur dans $\R^m$. Cette représentation continue permet de représenter énormément de combinaisons possibles en modifiant très légèrement le vecteur qui représente la séquence de mots.
+Une approche permettant d'opérer un lissage des probabilités est l'utilisation de réseaux de neurones. 
+Leur capacité à la généralisation leur permet de mieux estimer les probabilités de séquences rarement observées telles que les longues séquences où celles contenant des symboles rares.
+L'idée est de capturer les liens (ou caractéristiques) que les mots peuvent avoir entre eux. Ces liens sont représentés par les différentes connexions qui existent entre les neurones du réseau.
+On parle de \og représentation distribuée \fg{}. \\
+
+Un réseau de neurones, sous une forme simplifiée (modèle \textit{feed-forward} basique), est une fonction formée de la composition de $n$ fonctions de la forme :
+
+\[ f_i : X \mapsto \sigma_i(W_i\cdot X + b) \]
+
+où $X \in R^{p_i}, p_i \in \N^*$; $\sigma_i$ est une fonction non linéaire, appelée fonction d'activation (ReLU, tanh, sigmoid); $W_i$ est une matrice de poids (apprise) et $b$ un vecteur de biais (appris). \\
+
+C'est donc une fonction continue de $\R^p$ dans $\R^q$, où $(p,q) \in \N^2$. Afin de l'utiliser comme estimateur de la probabilité conditionnelle d'un symbole sachant les précédents (i.e. pour en faire un modèle de langue), il faut représenter l'ensemble des symboles précédents comme un vecteur de $R^p$ et les probabilités conditionnelles comme un vecteur de $R^q$.
+Les probabilités conditionnelles se représentent naturellement comme un vecteur de $R^{\vert V \vert}$ dont la somme des composantes fait 1.
+
+La représentation de l'entrée est sujette à plusieurs méthodes :
+\begin{itemize}
+  \item le \textit{One-Hot Encoding} consiste à représenter chaque symbole précédent comme un vecteur de $R^{\vert V \vert}$ dont une composante vaut 1 et toutes les autres 0.
+  \item les méthodes d'\textit{embedding} consistent à associer à chaque mot un vecteur de $R^p$ où $p \ll \vert V\vert$ de manière apprise.
+  \item l'utilisation d'\textit{embeddings} pré-appris (\textit{fastText}, \textit{GloVe}, \textit{Word2Vec}) permet de créer une représentation statique (ne changeant pas pendant l'apprentissage).
+\end{itemize}
 
 
 \end{document}
