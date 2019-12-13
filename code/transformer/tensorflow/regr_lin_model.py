@@ -5,7 +5,6 @@ import pandas as pd
 ### Model ###
 
 class LinearModel:
-
     def __init__(self):
         # Important to set dtype as float64
         # otherwise, there is a type error
@@ -26,7 +25,7 @@ X = np.linspace(0,3,N)
 Y = a * X + b + np.random.normal(0,1,N)
 
 #optimizer = tf.keras.optimizers.Adam(learning_rate=0.1)
-
+loss_fn = tf.keras.losses.MeanSquaredError()
 
 @tf.function
 def train(model, x, y, loss_fn, l=0.1):
@@ -37,14 +36,12 @@ def train(model, x, y, loss_fn, l=0.1):
     model.b.assign_sub(l * gradients[1])
     #optimizer.apply_gradients(zip(gradients, [model.a, model.b]))
 
-linear_model = LinearModel()
-loss_fn = tf.keras.losses.MeanSquaredError()
+if __name__ == "__main__":
+    linear_model = LinearModel()
+    epochs = 100
+    for epoch in range(epochs):
+        train(linear_model, X, Y, loss_fn)
 
-epochs = 100
-
-for epoch in range(epochs):
-    train(linear_model, X, Y, loss_fn)
-
-tf.print([linear_model.a, linear_model.b])
-print("Error on a : {:2.2%}".format(abs(linear_model.a - a)/a))
-print("Error on b : {:2.2%}".format(abs(linear_model.b - b)/b))
+    print([linear_model.a, linear_model.b])
+    print("Error on a : {:2.2%}".format(abs(linear_model.a - a)/a))
+    print("Error on b : {:2.2%}".format(abs(linear_model.b - b)/b))
