@@ -3,6 +3,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import tensorflow_datasets as tfds
+from tf.keras.layers import Dense, Embedding, LayerNormalization
+
 
 def load_dataset_as_str(path):
     with open(path, "r", encoding="utf-8") as file:
@@ -86,9 +88,9 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.num_heads = num_heads
         self.depth = self.dim // self.num_heads
         
-        self.dense_Q = tf.keras.layers.Dense(self.dim)
-        self.dense_K = tf.keras.layers.Dense(self.dim)
-        self.dense_V = tf.keras.layers.Dense(self.dim)
+        self.dense_Q = Dense(self.dim)
+        self.dense_K = Dense(self.dim)
+        self.dense_V = Dense(self.dim)
     
     def reshape_dense_output(self, x):
         """Reshape output from dense_{Q,K,V} by splitting the last dimension
@@ -117,7 +119,23 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         
         return out
 
-
+class EncoderBlock(tf.keras.Model):
+    def __init__(self, dim, num_heads):
+        self.dim = dim
+        self.mha = MultiHeadAttention(dim, num_heads)
+        self.ff = Dense(dim)
+        
+        self.norm_after_mha = LayerNormalization()
+        self.norm_after_ff = LayerNormalization()
+    
+    def call(self, x):
+        mha_output = self.mha(x)
+        mha_output = self.norm_after_mha(x + mha_output)
+        
+        ff_output = self.ff(mha_output)
+        ff_output = self.norm_after_ff(x + ff_output)
+        
+        return out
 
 if __name__ == "__main__":
     # Load data
@@ -130,7 +148,7 @@ if __name__ == "__main__":
     
     # Form model
     inputs = tf.keras.Input(shape=(None,), dtype='int32')
-    embedded = tf.keras.layers.Embedding(encoder.vocab_size, d_model)(inputs)
+    embedded = Embedding(encoder.vocab_size, d_model)(inputs)
     
     
     
