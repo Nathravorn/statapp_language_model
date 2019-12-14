@@ -1,19 +1,19 @@
+import sys
+
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from tf.keras.layers import Dense, Embedding, LayerNormalization
+from tensorflow.keras.layers import Dense, Embedding, LayerNormalization
 
+sys.path.append("..")
+from common import get_positional_encodings
 
 def load_dataset_as_str(path):
     with open(path, "r", encoding="utf-8") as file:
         text = file.read()
     return text
-
-def sequencer(vector, seq_length):
-    for i in range(len(vector)-seq_length):
-        yield vector[i:i+seq_length]
 
 #HParams
 seq_length = 24
@@ -21,13 +21,6 @@ num_blocks = 1
 d_model = 32
 d_query = 32
 num_heads = 4
-
-"""
-Classes to code:
-- EncoderBlock(tf.keras.Model)
-- MultiHeadAttention(tf.keras.layers.Layer)
-- ScaledDotProductAttention(tf.keras.layers.Layer)
-"""
 
 def scaled_dot_product_attention(q, k, v):
     """Perform scaled dot-product attention on input tensors.
@@ -114,7 +107,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         v = self.reshape_dense_output(self.dense_V(x)) # (batch_size, num_heads, seq_length, depth)
         
         att = scaled_dot_product_attention(q, k, v) # (batch_size, num_heads, seq_length, depth)
-        att = tf.transpose(att, perm=[0, 2, 1, 3])) # (batch_size, seq_length, num_heads, depth)
+        att = tf.transpose(att, perm=[0, 2, 1, 3]) # (batch_size, seq_length, num_heads, depth)
         att = tf.reshape(att, (att.shape[0], att.shape[1], -1)) # (batch_size, seq_length, dim)
         
         return out
@@ -137,18 +130,26 @@ class EncoderBlock(tf.keras.Model):
         
         return out
 
+def build_transformer():
+    inputs = tf.keras.Input(shape=(None,), dtype='int32')
+    embedded = Embedding(encoder.vocab_size, d_model)(inputs)
+    pos_encodings = tf.constant(get_positional_encodings(seq_length, d_model), dtype=tf.float32)
+    encoded = embedded + pos_encodings
+    
+    x = encoded
+    for _ in range(num_blocks):
+        x = EncoderBlock(dim=d_model, num_heads=num_heads)(x)
+    
+    
+
 if __name__ == "__main__":
     # Load data
     text = load_data_as_str("data/fr.train.top1M.txt")[:10000]
     encoder = tfds.features.text.SubwordTextEncoder([text], target_vocab_size=1000)
     X = encoder.encode(text)
     X_train, X_test = train_test_split(X, test_size=0.1)
-    X_train = sequencer(X_train, seq_length+1)
-    X_test = sequencer(X_test, seq_length+1)
     
     # Form model
-    inputs = tf.keras.Input(shape=(None,), dtype='int32')
-    embedded = Embedding(encoder.vocab_size, d_model)(inputs)
-    
+    model = build_transformer()
     
     
