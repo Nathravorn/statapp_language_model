@@ -21,6 +21,7 @@ num_blocks = 1
 d_model = 32
 d_query = 32
 num_heads = 4
+vocab_size = 1000
 
 def scaled_dot_product_attention(q, k, v):
     """Perform scaled dot-product attention on input tensors.
@@ -140,12 +141,16 @@ def build_transformer():
     for _ in range(num_blocks):
         x = EncoderBlock(dim=d_model, num_heads=num_heads)(x)
     
+    x = Dense(vocab_size, activation="softmax")(x)
     
+    model = tf.keras.Model(inputs=inputs, outputs=x)
+    
+    return model
 
 if __name__ == "__main__":
     # Load data
     text = load_data_as_str("data/fr.train.top1M.txt")[:10000]
-    encoder = tfds.features.text.SubwordTextEncoder([text], target_vocab_size=1000)
+    encoder = tfds.features.text.SubwordTextEncoder([text], target_vocab_size=vocab_size)
     X = encoder.encode(text)
     X_train, X_test = train_test_split(X, test_size=0.1)
     
