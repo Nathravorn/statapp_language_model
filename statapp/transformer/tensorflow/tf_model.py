@@ -15,13 +15,13 @@ from common import get_positional_encodings, load_data, split_into_X_y, load_set
 
 #HParams
 seq_length = 32
-num_blocks = 6
+num_blocks = 2
 d_model = 128
 d_query = 128
-num_heads = 8
+num_heads = 32
 target_vocab_size = 1000
 
-epochs = 10
+epochs = 5
 batch_size = 256
 
 def scaled_dot_product_attention(q, k, v):
@@ -181,8 +181,21 @@ def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power
     
     return encoder.decode(text)
 
+def calculate_perplexity(model, X_test, y_test):
+    probas = []
+    for X, y in tqdm(zip(X_test, y_test), total=len(X_test)):
+        y = np.argmax(y)
+        y_pred = model.predict(X.reshape(1, -1))[0]
+        probas.append(y_pred[y])
+    
+    probas = np.array(probas)
+    entropy = np.mean(-np.log2(probas))
+    perplexity = 2**entropy
+    
+    return perplexity
+
 def main(tokens="subwords"):
-    train, val, test, encoder = load_sets(tokens=tokens, target_vocab_size=target_vocab_size)
+    train, val, test, encoder = load_sets(tokens=tokens, sample=0.00002, target_vocab_size=target_vocab_size)
     vocab_size = encoder.vocab_size
     
     X_train, y_train = split_into_X_y(train, seq_length, vocab_size)
@@ -211,6 +224,9 @@ def main(tokens="subwords"):
         validation_data=(X_val, y_val),
     )
     # print(history.history)
+    
+    perp = calculate_perplexity(model, X_test, y_test)
+    print("Perplexity:", perp)
     
     generated_text = generate_sampled(model, encoder, seq_length, 200, "Il y a bien longtemps, dans un pays lointain où les oiseaux", 1)
     print(generated_text)

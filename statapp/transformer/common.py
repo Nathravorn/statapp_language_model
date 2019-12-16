@@ -52,9 +52,9 @@ def load_data(path, sample=1, split_on=" "):
     return text
     
 
-def load_sets(tokens="subwords", target_vocab_size=1000):
+def load_sets(tokens="subwords", sample=0.002, target_vocab_size=1000):
     # Load data
-    text = load_data("data/fr.train.top1M.txt", sample=0.002)
+    text = load_data("data/fr.train.top1M.txt", sample=sample)
     
     if tokens=="subwords":
         encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
