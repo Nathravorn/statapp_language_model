@@ -153,10 +153,12 @@ def main():
     # Load data
     text = load_data("data/fr.train.top1M.txt", sample=0.00001)
     encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-             text, target_vocab_size=vocab_size)
+        text,
+        target_vocab_size=vocab_size
+    )
     X = encoder.encode(text)
-    train, test = train_test_split(X, test_size=0.1)
-    train, val  = train_test_split(train, test_size=0.1)
+    train, test = train_test_split(X, test_size=0.1, shuffle=False)
+    train, val  = train_test_split(train, test_size=0.1, shuffle=False)
     
     X_train, y_train = split_into_X_y(train, seq_length)
     X_test, y_test = split_into_X_y(test, seq_length)
@@ -175,7 +177,7 @@ def main():
     history = model.fit(
         X_train,
         y_train,
-        batch_size=64,
+        batch_size=128,
         epochs=EPOCHS,
         validation_data=(X_val, y_val),
     )
