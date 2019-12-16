@@ -3,25 +3,26 @@ import os
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from tensorflow.keras.layers import Dense, Embedding, LayerNormalization
+from tensorflow.keras.layers import Dense, Embedding, LayerNormalization, TimeDistributed
 
 this_file_dir = os.path.dirname(__file__)
 sys.path.append(os.path.dirname(this_file_dir))
 from common import get_positional_encodings, load_data, split_into_X_y
 
 #HParams
-seq_length = 24
-num_blocks = 1
-d_model = 32
-d_query = 32
-num_heads = 4
+seq_length = 32
+num_blocks = 2
+d_model = 128
+d_query = 128
+num_heads = 16
 target_vocab_size = 1000
 
-epochs = 2
-batch_size = 32
+epochs = 1
+batch_size = 512
 
 def scaled_dot_product_attention(q, k, v):
     """Perform scaled dot-product attention on input tensors.
@@ -142,7 +143,10 @@ def build_transformer(vocab_size):
     for _ in range(num_blocks):
         x = EncoderBlock(dim=d_model, num_heads=num_heads)(x)
     
-    x = tf.keras.layers.Reshape((seq_length*d_model,))(x)
+    x = TimeDistributed(Dense(d_model//8))(x)
+    x = tf.keras.layers.Reshape((seq_length*d_model//8,))(x)    
+    
+    x = Dense(d_model, activation="relu")(x)
     outputs = Dense(vocab_size, activation="softmax")(x)
     
     model = tf.keras.Model(inputs=inputs, outputs=outputs) # (batch_size, seq_length, vocab_size)
@@ -165,35 +169,42 @@ def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power
     text = encoder.encode(prompt)
     assert len(text) >= seq_length
     
-    for i in range(nb_tokens_to_gen):
-        probas = model.predict([text[-seq_length:]])[0]
+    for i in tqdm(range(nb_tokens_to_gen)):
+        probas = model.predict(
+            np.array(text[-seq_length:])
+            .reshape(1, seq_length)
+        )[0]
         probas = probas**power
         probas = probas / probas.sum()
         next = np.random.choice(np.arange(len(probas)), p=probas)
         text.append(next)
-    return text
+    
+    return encoder.decode(text)
 
 def main():
     # Load data
-    text = load_data("data/fr.train.top1M.txt", sample=0.00001)
+    text = load_data("data/fr.train.top1M.txt", sample=0.001)
     encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
         text,
         target_vocab_size=target_vocab_size
     )
+    vocab_size = encoder.vocab_size
     X = encoder.encode(text)
     train, test = train_test_split(X, test_size=0.1, shuffle=False)
     train, val  = train_test_split(train, test_size=0.1, shuffle=False)
     
-    X_train, y_train = split_into_X_y(train, seq_length)
-    X_test, y_test = split_into_X_y(test, seq_length)
-    X_val, y_val = split_into_X_y(val, seq_length)
+    X_train, y_train = split_into_X_y(train, seq_length, vocab_size)
+    X_test, y_test = split_into_X_y(test, seq_length, vocab_size)
+    X_val, y_val = split_into_X_y(val, seq_length, vocab_size)
 
     # Form model
-    model = build_transformer(vocab_size=encoder.vocab_size)
+    model = build_transformer(vocab_size=vocab_size)
     # from_logits: Whether y_pred is expected to be a logits tensor
     model.compile(
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none'),
-        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
+        # loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
+        optimizer=tf.keras.optimizers.Adam(1e-2),
+        loss=tf.keras.losses.CategoricalCrossentropy(),
+        metrics=[tf.keras.metrics.CategoricalAccuracy()],
     )
 
     print(model.summary())
@@ -201,12 +212,14 @@ def main():
     history = model.fit(
         X_train,
         y_train,
-        steps_per_epoch=np.ceil(len(X_train)/batch_size),
+        # steps_per_epoch=np.ceil(len(X_train)/batch_size),
         batch_size=batch_size,
         epochs=epochs,
-        # validation_data=(X_val, y_val),
+        validation_data=(X_val, y_val),
     )
     # print(history.history)
     
-    generated_text = generate_sampled(model, encoder, seq_length, 100, "Il y a bien longtemps, dans un pays lointain où les oiseaux", 1)
+    generated_text = generate_sampled(model, encoder, seq_length, 200, "Il y a bien longtemps, dans un pays lointain où les oiseaux", 1)
     print(generated_text)
+    
+    return model, encoder

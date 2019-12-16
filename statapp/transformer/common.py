@@ -51,18 +51,28 @@ def load_data(path, sample=1, split_on=" "):
     return text
     
     
-def split_into_X_y(samples, seq_length):
+def split_into_X_y(samples, seq_length, vocab_size):
     """Split a list of samples into two lists: X, a list of "input" sequences of length seq_length,
-    and y, a list of "target" tokens which correspond to the token following X.
+    and y, a list of "target" tokens (one-hot-encoded according to vocab_size) which correspond to the token following X.
     
     Args:
         samples (list of lists of tokens): Samples to split.
         seq_length (int): Length of each sequence in X.
+        vocab_size (int): Length of the one-hot encoding vectors for y.
     
     Returns:
         list of lists of tokens: X
-        list of tokens: y
+        list of one-hot-encoded tokens: y
     """
     X = [samples[i:i+seq_length] for i in range(len(samples)-seq_length)]
-    y = [samples[i+seq_length] for i in range(len(samples)-seq_length)]
-    return X, y
+    y_integers = [
+        samples[i+seq_length]
+        for i in range(len(samples)-seq_length)
+    ]
+    y = []
+    for index in y_integers:
+        one_hot_vector = np.zeros(vocab_size)
+        one_hot_vector[index] = 1
+        y.append(one_hot_vector)
+    
+    return np.array(X), np.array(y)
