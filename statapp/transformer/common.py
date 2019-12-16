@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.model_selection import train_test_split
 import tensorflow_datasets as tfds
 
 def get_positional_encodings(seq_length, d_model):
@@ -51,7 +52,7 @@ def load_data(path, sample=1, split_on=" "):
     return text
     
 
-def load_sets(tokens="subwords"):
+def load_sets(tokens="subwords", target_vocab_size=1000):
     # Load data
     text = load_data("data/fr.train.top1M.txt", sample=0.002)
     
@@ -74,7 +75,7 @@ def load_sets(tokens="subwords"):
     train, val  = train_test_split(train, test_size=0.1, shuffle=False)
     
     return train, val, test, encoder
-    
+
 
 def split_into_X_y(samples, seq_length, vocab_size):
     """Split a list of samples into two lists: X, a list of "input" sequences of length seq_length,
