@@ -210,6 +210,7 @@ def load_sets(tokens="subwords"):
     
 def main(tokens="subwords"):
     train, val, test, encoder = load_sets(tokens=tokens)
+    vocab_size = encoder.vocab_size
     
     X_train, y_train = split_into_X_y(train, seq_length, vocab_size)
     X_test, y_test = split_into_X_y(test, seq_length, vocab_size)
