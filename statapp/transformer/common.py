@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.model_selection import train_test_split
 import tensorflow_datasets as tfds
 
 def get_positional_encodings(seq_length, d_model):
@@ -50,7 +51,32 @@ def load_data(path, sample=1, split_on=" "):
     
     return text
     
+
+def load_sets(tokens="subwords", target_vocab_size=1000):
+    # Load data
+    text = load_data("data/fr.train.top1M.txt", sample=0.002)
     
+    if tokens=="subwords":
+        encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
+            text,
+            target_vocab_size=target_vocab_size
+        )
+    
+    elif tokens=="characters":
+        encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
+            text,
+            target_vocab_size=258,
+            max_subword_length=1,
+        )
+    
+    vocab_size = encoder.vocab_size
+    X = encoder.encode(text)
+    train, test = train_test_split(X, test_size=0.1, shuffle=False)
+    train, val  = train_test_split(train, test_size=0.1, shuffle=False)
+    
+    return train, val, test, encoder
+
+
 def split_into_X_y(samples, seq_length, vocab_size):
     """Split a list of samples into two lists: X, a list of "input" sequences of length seq_length,
     and y, a list of "target" tokens (one-hot-encoded according to vocab_size) which correspond to the token following X.
