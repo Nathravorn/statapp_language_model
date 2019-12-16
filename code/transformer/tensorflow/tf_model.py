@@ -10,7 +10,8 @@ from tensorflow.keras.layers import Dense, Embedding, LayerNormalization
 sys.path.append("..")
 from common import get_positional_encodings
 
-def load_dataset_as_str(path):
+
+def load_data_as_str(path):
     with open(path, "r", encoding="utf-8") as file:
         text = file.read()
     return text
@@ -97,7 +98,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         Returns:
             tf.Tensor of shape (batch_size, self.num_heads, seq_length, self.depth)
         """
-        x = tf.reshape(x, (x.shape[0], x.shape[1], self.num_heads, self.depth))
+        x = tf.reshape(x, (tf.shape(x)[0], tf.shape(x)[1], self.num_heads, self.depth))
         return tf.transpose(x, perm=[0, 2, 1, 3])
 
     def call(self, x):
@@ -109,12 +110,13 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         
         att = scaled_dot_product_attention(q, k, v) # (batch_size, num_heads, seq_length, depth)
         att = tf.transpose(att, perm=[0, 2, 1, 3]) # (batch_size, seq_length, num_heads, depth)
-        att = tf.reshape(att, (att.shape[0], att.shape[1], -1)) # (batch_size, seq_length, dim)
+        att = tf.reshape(att, (tf.shape(att)[0], tf.shape(att)[1], -1)) # (batch_size, seq_length, dim)
         
-        return out
+        return att
 
 class EncoderBlock(tf.keras.Model):
     def __init__(self, dim, num_heads):
+        super(EncoderBlock, self).__init__()
         self.dim = dim
         self.mha = MultiHeadAttention(dim, num_heads)
         self.ff = Dense(dim)
@@ -129,11 +131,11 @@ class EncoderBlock(tf.keras.Model):
         ff_output = self.ff(mha_output)
         ff_output = self.norm_after_ff(x + ff_output)
         
-        return out
+        return ff_output
 
 def build_transformer():
     inputs = tf.keras.Input(shape=(None,), dtype='int32')
-    embedded = Embedding(encoder.vocab_size, d_model)(inputs)
+    embedded = Embedding(encoder.vocab_size, d_model)(inputs) # (batch_size, seq_length, d_model)
     pos_encodings = tf.constant(get_positional_encodings(seq_length, d_model), dtype=tf.float32)
     encoded = embedded + pos_encodings
     
@@ -150,11 +152,13 @@ def build_transformer():
 if __name__ == "__main__":
     # Load data
     text = load_data_as_str("data/fr.train.top1M.txt")[:10000]
-    encoder = tfds.features.text.SubwordTextEncoder([text], target_vocab_size=vocab_size)
+    encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
+            [text], target_vocab_size=vocab_size)
     X = encoder.encode(text)
     X_train, X_test = train_test_split(X, test_size=0.1)
     
     # Form model
     model = build_transformer()
+    print(model)
     
     
