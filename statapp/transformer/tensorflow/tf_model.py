@@ -1,4 +1,5 @@
 import sys
+import os
 
 import numpy as np
 import pandas as pd
@@ -7,15 +8,9 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow.keras.layers import Dense, Embedding, LayerNormalization
 
-sys.path.append("..")
-from common import get_positional_encodings, load_data
-# from statapp.transformer.common import get_positional_encodings, load_data
-
-
-def load_data_as_str(path, sample=0.01, split_on="\n"):
-    with open(path, "r", encoding="utf-8") as file:
-        text = file.readlines()
-    return text
+this_file_dir = os.path.dirname(__file__)
+sys.path.append(os.path.dirname(this_file_dir))
+from common import get_positional_encodings, load_data, split_into_X_y
 
 #HParams
 seq_length = 24
@@ -138,7 +133,7 @@ class EncoderBlock(tf.keras.Model):
 
 def build_transformer():
     ###### shape=seq_length ???
-    inputs = tf.keras.Input(shape=(None,), dtype='int32')
+    inputs = tf.keras.Input(shape=(seq_length,), dtype='int32')
     embedded = Embedding(vocab_size, d_model)(inputs) # (batch_size, seq_length, d_model)
     pos_encodings = tf.constant(get_positional_encodings(seq_length, d_model), dtype=tf.float32)
     encoded = tf.math.add(embedded, pos_encodings, name="positional_encoding")
@@ -147,13 +142,14 @@ def build_transformer():
     for _ in range(num_blocks):
         x = EncoderBlock(dim=d_model, num_heads=num_heads)(x)
     
+    x = tf.keras.layers.Reshape((seq_length*d_model,))(x)
     outputs = Dense(vocab_size, activation="softmax")(x)
     
     model = tf.keras.Model(inputs=inputs, outputs=outputs) # (batch_size, seq_length, vocab_size)
     
     return model
 
-if __name__ == "__main__":
+def main():
     # Load data
     text = load_data("data/fr.train.top1M.txt", sample=0.00001)
     encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
@@ -161,27 +157,26 @@ if __name__ == "__main__":
     X = encoder.encode(text)
     train, test = train_test_split(X, test_size=0.1)
     train, val  = train_test_split(train, test_size=0.1)
-
-    X_train = [train[i:i+seq_length] for i in range(len(train)-seq_length)]
-    Y_train = [train[i+seq_length] for i in range(len(train)-seq_length)]
-
-    X_test = [test[i:i+seq_length] for i in range(len(test)-seq_length)]
-    Y_test = [test[i+seq_length] for i in range(len(test)-seq_length)]
     
-    X_val = [val[i:i+seq_length] for i in range(len(val)-seq_length)]
-    Y_val = [val[i+seq_length] for i in range(len(val)-seq_length)]
+    X_train, y_train = split_into_X_y(train, seq_length)
+    X_test, y_test = split_into_X_y(test, seq_length)
+    X_val, y_val = split_into_X_y(val, seq_length)
 
     # Form model
     model = build_transformer()
     # from_logits: Whether y_pred is expected to be a logits tensor
-    model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(
-        from_logits=True, reduction='none'),
-            metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])
+    model.compile(
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none'),
+        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
+    )
 
     print(model.summary())
 
-    history = model.fit(X_train, Y_train,
-            batch_size=64,
-            epochs=EPOCHS,
-            validation_data=(X_val,Y_val))
+    history = model.fit(
+        X_train,
+        Y_train,
+        batch_size=64,
+        epochs=EPOCHS,
+        # validation_data=(X_val,Y_val),
+    )
     print(history.history)

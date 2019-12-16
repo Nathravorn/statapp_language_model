@@ -41,7 +41,7 @@ def load_data(path, sample=1, split_on=" "):
     Returns:
         string: Dataset.
     """
-    with open(path, "r") as file:
+    with open(path, "r", encoding="utf-8") as file:
         text = file.read()
     
     text = text[:int(len(text)*sample)]
@@ -60,5 +60,9 @@ def split_into_X_y(samples, seq_length):
         seq_length (int): Length of each sequence in X.
     
     Returns:
-        list: 
+        list of lists of tokens: X
+        list of tokens: y
     """
+    X = [samples[i:i+seq_length] for i in range(len(samples)-seq_length)]
+    y = [samples[i+seq_length] for i in range(len(samples)-seq_length)]
+    return X, y
