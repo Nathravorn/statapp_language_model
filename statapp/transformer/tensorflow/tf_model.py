@@ -15,14 +15,14 @@ from common import get_positional_encodings, load_data, split_into_X_y
 
 #HParams
 seq_length = 32
-num_blocks = 2
-d_model = 128
-d_query = 128
-num_heads = 16
+num_blocks = 1
+d_model = 64
+d_query = 64
+num_heads = 4
 target_vocab_size = 1000
 
-epochs = 1
-batch_size = 512
+epochs = 4
+batch_size = 256
 
 def scaled_dot_product_attention(q, k, v):
     """Perform scaled dot-product attention on input tensors.
@@ -129,7 +129,7 @@ class EncoderBlock(tf.keras.Model):
         mha_output = self.norm_after_mha(x + mha_output)
         
         ff_output = self.ff(mha_output)
-        ff_output = self.norm_after_ff(x + ff_output)
+        ff_output = self.norm_after_ff(mha_output + ff_output)
         
         return ff_output
 
@@ -143,9 +143,12 @@ def build_transformer(vocab_size):
     for _ in range(num_blocks):
         x = EncoderBlock(dim=d_model, num_heads=num_heads)(x)
     
-    x = TimeDistributed(Dense(d_model//8))(x)
-    x = tf.keras.layers.Reshape((seq_length*d_model//8,))(x)    
+    # x = TimeDistributed(Dense(d_model//8))(x)
+    x = tf.keras.layers.Reshape((seq_length*d_model,))(x)
     
+    x = Dense(d_model, activation="relu")(x)
+    x = Dense(d_model, activation="relu")(x)
+    x = Dense(d_model, activation="relu")(x)
     x = Dense(d_model, activation="relu")(x)
     outputs = Dense(vocab_size, activation="softmax")(x)
     
@@ -181,32 +184,48 @@ def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power
     
     return encoder.decode(text)
 
-def main():
+def load_sets(tokens="subwords"):
     # Load data
-    text = load_data("data/fr.train.top1M.txt", sample=0.001)
-    encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-        text,
-        target_vocab_size=target_vocab_size
-    )
+    text = load_data("data/fr.train.top1M.txt", sample=0.002)
+    
+    if tokens=="subwords":
+        encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
+            text,
+            target_vocab_size=target_vocab_size
+        )
+    
+    elif tokens=="characters":
+        encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
+            text,
+            target_vocab_size=258,
+            max_subword_length=1,
+        )
+    
     vocab_size = encoder.vocab_size
     X = encoder.encode(text)
     train, test = train_test_split(X, test_size=0.1, shuffle=False)
     train, val  = train_test_split(train, test_size=0.1, shuffle=False)
     
+    return train, val, test, encoder
+    
+def main(tokens="subwords"):
+    train, val, test, encoder = load_sets(tokens=tokens)
+    
     X_train, y_train = split_into_X_y(train, seq_length, vocab_size)
     X_test, y_test = split_into_X_y(test, seq_length, vocab_size)
     X_val, y_val = split_into_X_y(val, seq_length, vocab_size)
-
+    
     # Form model
     model = build_transformer(vocab_size=vocab_size)
     # from_logits: Whether y_pred is expected to be a logits tensor
     model.compile(
         # loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
-        optimizer=tf.keras.optimizers.Adam(1e-2),
+        optimizer=tf.keras.optimizers.Adam(1e-3),
         loss=tf.keras.losses.CategoricalCrossentropy(),
         metrics=[tf.keras.metrics.CategoricalAccuracy()],
     )
-
+    
+    print("Non mais allô quoi... Ouvalument!")
     print(model.summary())
 
     history = model.fit(
