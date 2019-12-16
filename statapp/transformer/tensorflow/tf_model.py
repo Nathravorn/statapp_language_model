@@ -7,8 +7,8 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow.keras.layers import Dense, Embedding, LayerNormalization
 
-sys.path.append("..")
-from common import get_positional_encodings
+# sys.path.append("..")
+from statapp.transformer.common import get_positional_encodings, load_data
 
 
 def load_data_as_str(path, sample=0.01, split_on="\n"):
@@ -153,7 +153,7 @@ def build_transformer():
 
 if __name__ == "__main__":
     # Load data
-    text = load_data_as_str("data/fr.train.top1M.txt")[:10000]
+    text = load_data("data/fr.train.top1M.txt", sample=0.00001)
     encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
              text, target_vocab_size=vocab_size)
     X = encoder.encode(text)
@@ -188,4 +188,3 @@ if __name__ == "__main__":
             epochs=EPOCHS,
             validation_data=(X_val,Y_val))
     print(history.history)
-

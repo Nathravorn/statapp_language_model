@@ -51,3 +51,14 @@ def load_data(path, sample=1, split_on=" "):
     return text
     
     
+def split_into_X_y(samples, seq_length):
+    """Split a list of samples into two lists: X, a list of "input" sequences of length seq_length,
+    and y, a list of "target" tokens which correspond to the token following X.
+    
+    Args:
+        samples (list of lists of tokens): Samples to split.
+        seq_length (int): Length of each sequence in X.
+    
+    Returns:
+        list: 
+    """
