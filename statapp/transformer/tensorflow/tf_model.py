@@ -174,9 +174,9 @@ def main():
 
     history = model.fit(
         X_train,
-        Y_train,
+        y_train,
         batch_size=64,
         epochs=EPOCHS,
-        # validation_data=(X_val,Y_val),
+        validation_data=(X_val, y_val),
     )
     print(history.history)
