@@ -18,9 +18,10 @@ num_blocks = 1
 d_model = 32
 d_query = 32
 num_heads = 4
-vocab_size = 1000
+target_vocab_size = 1000
 
-EPOCHS = 1
+epochs = 2
+batch_size = 32
 
 def scaled_dot_product_attention(q, k, v):
     """Perform scaled dot-product attention on input tensors.
@@ -131,8 +132,7 @@ class EncoderBlock(tf.keras.Model):
         
         return ff_output
 
-def build_transformer():
-    ###### shape=seq_length ???
+def build_transformer(vocab_size):
     inputs = tf.keras.Input(shape=(seq_length,), dtype='int32')
     embedded = Embedding(vocab_size, d_model)(inputs) # (batch_size, seq_length, d_model)
     pos_encodings = tf.constant(get_positional_encodings(seq_length, d_model), dtype=tf.float32)
@@ -149,12 +149,36 @@ def build_transformer():
     
     return model
 
+def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power=1):
+    """Generate a sequence of tokens starting from given starting string using the sampling method.
+    
+    Args:
+        nb_tokens_to_gen (int): Number of tokens to generate past the starting sequence.
+        prompt (str): String to start from.
+        power (float): Power to raise probabilities at before sampling.
+            A higher power means a less risky sampling.
+            An infinite power would be equivalent to greedy sampling.
+    
+    Returns:
+        tuple of strings: Generated tokens.
+    """
+    text = encoder.encode(prompt)
+    assert len(text) >= seq_length
+    
+    for i in range(nb_tokens_to_gen):
+        probas = model.predict([text[-seq_length:]])[0]
+        probas = probas**power
+        probas = probas / probas.sum()
+        next = np.random.choice(np.arange(len(probas)), p=probas)
+        text.append(next)
+    return text
+
 def main():
     # Load data
     text = load_data("data/fr.train.top1M.txt", sample=0.00001)
     encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
         text,
-        target_vocab_size=vocab_size
+        target_vocab_size=target_vocab_size
     )
     X = encoder.encode(text)
     train, test = train_test_split(X, test_size=0.1, shuffle=False)
@@ -165,7 +189,7 @@ def main():
     X_val, y_val = split_into_X_y(val, seq_length)
 
     # Form model
-    model = build_transformer()
+    model = build_transformer(vocab_size=encoder.vocab_size)
     # from_logits: Whether y_pred is expected to be a logits tensor
     model.compile(
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none'),
@@ -177,8 +201,12 @@ def main():
     history = model.fit(
         X_train,
         y_train,
-        batch_size=128,
-        epochs=EPOCHS,
-        validation_data=(X_val, y_val),
+        steps_per_epoch=np.ceil(len(X_train)/batch_size),
+        batch_size=batch_size,
+        epochs=epochs,
+        # validation_data=(X_val, y_val),
     )
-    print(history.history)
+    # print(history.history)
+    
+    generated_text = generate_sampled(model, encoder, seq_length, 100, "Il y a bien longtemps, dans un pays lointain où les oiseaux", 1)
+    print(generated_text)
