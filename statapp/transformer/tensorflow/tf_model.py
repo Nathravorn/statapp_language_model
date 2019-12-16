@@ -11,9 +11,9 @@ sys.path.append("..")
 from common import get_positional_encodings
 
 
-def load_data_as_str(path):
+def load_data_as_str(path, sample=0.01, split_on="\n"):
     with open(path, "r", encoding="utf-8") as file:
-        text = file.read()
+        text = file.readlines()
     return text
 
 #HParams
@@ -23,6 +23,8 @@ d_model = 32
 d_query = 32
 num_heads = 4
 vocab_size = 1000
+
+EPOCHS = 1
 
 def scaled_dot_product_attention(q, k, v):
     """Perform scaled dot-product attention on input tensors.
@@ -153,12 +155,37 @@ if __name__ == "__main__":
     # Load data
     text = load_data_as_str("data/fr.train.top1M.txt")[:10000]
     encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-            [text], target_vocab_size=vocab_size)
+             text, target_vocab_size=vocab_size)
     X = encoder.encode(text)
-    X_train, X_test = train_test_split(X, test_size=0.1)
+    train, test = train_test_split(X, test_size=0.1)
+    train, val  = train_test_split(train, test_size=0.1)
+
+    X_train, X_test, X_val = [], [], []
+    Y_train, Y_test, Y_val = [], [], []
+
+    for sample in train:
+        X_train.append([sample[i:i+seq_length] for i in range(len(sample)-seq_length)])
+        Y_train.append([sample[i+seq_length] for i in range(len(sample)-seq_length)])
+
+    for sample in test:
+        X_test.append([sample[i:i+seq_length] for i in range(len(sample)-seq_length)])
+        Y_test.append([sample[i+seq_length] for i in range(len(sample)-seq_length)])
+    
+    for sample in val:
+        X_val.append([sample[i:i+seq_length] for i in range(len(sample)-seq_length)])
+        Y_val.append([sample[i+seq_length] for i in range(len(sample)-seq_length)])
+
     
     # Form model
     model = build_transformer()
-    print(model)
-    
-    
+    model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+            metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])
+
+    print('# Training....')
+
+    history = model.fit(X_train, Y_train,
+            batch_size=64,
+            epochs=EPOCHS,
+            validation_data=(X_val,Y_val))
+    print(history.history)
+
