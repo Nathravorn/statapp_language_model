@@ -11,14 +11,14 @@ from tensorflow.keras.layers import Dense, Embedding, LayerNormalization, TimeDi
 
 this_file_dir = os.path.dirname(__file__)
 sys.path.append(os.path.dirname(this_file_dir))
-from common import get_positional_encodings, load_data, split_into_X_y
+from common import get_positional_encodings, load_data, split_into_X_y, load_sets
 
 #HParams
 seq_length = 32
-num_blocks = 1
-d_model = 64
-d_query = 64
-num_heads = 4
+num_blocks = 2
+d_model = 128
+d_query = 128
+num_heads = 8
 target_vocab_size = 1000
 
 epochs = 4
@@ -143,12 +143,9 @@ def build_transformer(vocab_size):
     for _ in range(num_blocks):
         x = EncoderBlock(dim=d_model, num_heads=num_heads)(x)
     
-    # x = TimeDistributed(Dense(d_model//8))(x)
-    x = tf.keras.layers.Reshape((seq_length*d_model,))(x)
+    x = TimeDistributed(Dense(d_model//8))(x)
+    x = tf.keras.layers.Reshape((seq_length*d_model//8,))(x)
     
-    x = Dense(d_model, activation="relu")(x)
-    x = Dense(d_model, activation="relu")(x)
-    x = Dense(d_model, activation="relu")(x)
     x = Dense(d_model, activation="relu")(x)
     outputs = Dense(vocab_size, activation="softmax")(x)
     
@@ -184,30 +181,6 @@ def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power
     
     return encoder.decode(text)
 
-def load_sets(tokens="subwords"):
-    # Load data
-    text = load_data("data/fr.train.top1M.txt", sample=0.002)
-    
-    if tokens=="subwords":
-        encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-            text,
-            target_vocab_size=target_vocab_size
-        )
-    
-    elif tokens=="characters":
-        encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-            text,
-            target_vocab_size=258,
-            max_subword_length=1,
-        )
-    
-    vocab_size = encoder.vocab_size
-    X = encoder.encode(text)
-    train, test = train_test_split(X, test_size=0.1, shuffle=False)
-    train, val  = train_test_split(train, test_size=0.1, shuffle=False)
-    
-    return train, val, test, encoder
-    
 def main(tokens="subwords"):
     train, val, test, encoder = load_sets(tokens=tokens)
     vocab_size = encoder.vocab_size
