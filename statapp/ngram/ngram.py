@@ -1,5 +1,6 @@
 import numpy as np
 from random import choice
+from tqdm import tqdm
 
 
 class NGramModel:
@@ -162,3 +163,18 @@ class NGramModel:
             k_best_sequences = ordered[-k:]
         return k_best_sequences[-1][0]
     
+    
+    def calculate_perplexity(self, text_tokens, epsilon=0.0001):
+        """Needs to already be fit.
+        """
+        probas = []
+        for i in tqdm(range(len(text_tokens)-self.n-1)):
+            seq = text_tokens[i:i+self.n-1]
+            proba = self.get_word_probability(text_tokens[i+self.n-1], tuple(seq)) + epsilon
+            probas.append(proba)
+        
+        probas = np.array(probas)
+        entropy = np.mean(-np.log2(probas))
+        perplexity = 2**entropy
+        
+        return perplexity
