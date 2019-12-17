@@ -71,7 +71,7 @@ def load_sets(tokens="subwords", sample=0.002, target_vocab_size=1000):
     
     vocab_size = encoder.vocab_size
     X = encoder.encode(text)
-    train, test = train_test_split(X, test_size=0.1, shuffle=False)
+    train, test = train_test_split(X, test_size=0.0005, shuffle=False)
     train, val  = train_test_split(train, test_size=0.1, shuffle=False)
     
     return train, val, test, encoder

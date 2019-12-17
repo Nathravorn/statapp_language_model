@@ -21,7 +21,7 @@ d_query = 128
 num_heads = 32
 target_vocab_size = 1000
 
-epochs = 5
+epochs = 2
 batch_size = 256
 
 def scaled_dot_product_attention(q, k, v):
@@ -195,7 +195,7 @@ def calculate_perplexity(model, X_test, y_test):
     return perplexity
 
 def main(tokens="subwords"):
-    train, val, test, encoder = load_sets(tokens=tokens, sample=0.00002, target_vocab_size=target_vocab_size)
+    train, val, test, encoder = load_sets(tokens=tokens, sample=0.002, target_vocab_size=target_vocab_size)
     vocab_size = encoder.vocab_size
     
     X_train, y_train = split_into_X_y(train, seq_length, vocab_size)
