@@ -1,5 +1,8 @@
 import sys
 import os
+import json
+import datetime
+from pprint import pprint
 
 import numpy as np
 import pandas as pd
@@ -11,19 +14,21 @@ from tensorflow.keras.layers import Dense, Embedding, LayerNormalization, TimeDi
 
 # this_file_dir = os.path.dirname(__file__)
 # sys.path.append(os.path.dirname(this_file_dir))
+import statapp
 from statapp.transformer.common import get_positional_encodings
 from statapp.common.preprocessing import load_data, encode_data, split_into_X_y
+from statapp.common.utils import NumpyEncoder
 
 #Hyper Parameters
 hparams = {
     "seq_length": 32,
-    "num_blocks": 2,
+    "num_blocks": 1,
     "d_model": 16,
     # "d_query": 16,
     "num_heads": 1,
     "target_vocab_size": 1000,
 
-    "epochs": 300,
+    "epochs": 600,
     "batch_size": 256,
     "learning_rate": 1e-2,
 }
@@ -140,17 +145,19 @@ class EncoderBlock(tf.keras.Model):
 def build_transformer(vocab_size):
     inputs = tf.keras.Input(shape=(hparams["seq_length"],), dtype='int32')
     embedded = Embedding(vocab_size, hparams["d_model"])(inputs) # (batch_size, seq_length, hparams["d_model"])
-    pos_encodings = tf.constant(get_positional_encodings(hparams["seq_length"], d_model), dtype=tf.float32)
+    pos_encodings = tf.constant(get_positional_encodings(hparams["seq_length"], hparams["d_model"]), dtype=tf.float32)
     encoded = tf.math.add(embedded, pos_encodings, name="positional_encoding")
     
     x = encoded
     for _ in range(hparams["num_blocks"]):
         x = EncoderBlock(dim=hparams["d_model"], num_heads=hparams["num_heads"])(x)
     
-    x = TimeDistributed(Dense(hparams["d_model"]//8))(x)
-    x = tf.keras.layers.Reshape((hparams["seq_length"]*hparams["d_model"]//8,))(x)
+    # x = TimeDistributed(Dense(hparams["d_model"]//8))(x)
+    # x = tf.keras.layers.Reshape((hparams["seq_length"]*hparams["d_model"]//8,))(x)
+
+    x = tf.keras.layers.Reshape((hparams["seq_length"]*hparams["d_model"],))(x)
     
-    x = Dense(hparams["d_model"], activation="relu")(x)
+    # x = Dense(hparams["d_model"], activation="relu")(x)
     outputs = Dense(vocab_size, activation="softmax")(x)
     
     model = tf.keras.Model(inputs=inputs, outputs=outputs) # (batch_size, seq_length, vocab_size)
@@ -198,11 +205,48 @@ def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     
     return perplexity
 
-def main(tokens="subwords"):
+def add_to_log(entry, path=None, auto_add=["id", "date"]):
+    """Add to the training log file the specified entry.
+    By default, adds a few automatically generated fields to the entry.
+    
+    Args:
+        entry (dict): Entry to add to the log.
+        path (str): Path to the log file.
+            Default: "folder_containing_statapp_package/logs/tensorflow_transformer/log.json"
+        auto_add (list of str): Keys to automatically add to the entry before logging.
+            Supported keys:
+                "id": A number equal to 1 + the maximum id in the current log.
+                "date": A string representing the current date and time.
+            Default: ["id", "date"].
+        add_id (bool): Whether to add "id" key to entry.
+            Default: True.
+    """
+    # Implement default path
+    if path is None:
+        path = os.path.join(os.path.dirname(statapp.__name__), "logs",  "tensorflow_transformer", "log.json")
+    
+    # Read log file
+    with open(path, "r") as file:
+        log = json.load(file)
+    
+    # Add auto fields
+    if "id" in auto_add:
+        current_max_id = max([el.get("id", 0) for el in log])
+        entry["id"] = current_max_id + 1
+    if "date" in auto_add:
+        entry["date"] = datetime.datetime.today().strftime("%Y-%m-%dT%H:%M:%S")
+    
+    log.append(entry)
+    
+    # Write log file
+    with open(path, "w") as file:
+        json.dump(log, file, indent=4, sort_keys=True, cls=NumpyEncoder)
+
+def main(tokens="subwords", log_training=True, comment=""):
     text = load_data("data/fr.train.top1M.txt", sample=0.000002)
     X, encoder = encode_data(text, tokens="subwords", target_vocab_size=hparams["target_vocab_size"])
-    train, test = train_test_split(X, test_size=0.0005, shuffle=False)
-    train, val  = train_test_split(train, test_size=0.1, shuffle=False)
+    train, test = train_test_split(X, test_size=0.1, shuffle=False)
+    train, val  = train_test_split(train, test_size=0.3, shuffle=False)
     vocab_size = encoder.vocab_size
     
     X_train, y_train = split_into_X_y(train, hparams["seq_length"], one_hot_encode_y=True, vocab_size=vocab_size)
@@ -214,13 +258,16 @@ def main(tokens="subwords"):
     # from_logits: Whether y_pred is expected to be a logits tensor
     model.compile(
         # loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
-        optimizer=tf.keras.optimizers.Adam(hparams["learning_rate"]),
         loss=tf.keras.losses.CategoricalCrossentropy(),
+        optimizer=tf.keras.optimizers.Adam(hparams["learning_rate"]),
         metrics=[tf.keras.metrics.CategoricalAccuracy()],
     )
     
     print("Non mais allô quoi... Ouvalument!")
-    print(model.summary())
+    summary = []
+    model.summary(print_fn=lambda x: summary.append(x))
+    summary = "\n".join(summary)
+    print(summary)
 
     history = model.fit(
         X_train,
@@ -230,15 +277,34 @@ def main(tokens="subwords"):
         epochs=hparams["epochs"],
         validation_data=(X_val, y_val),
     )
-    # print(history.history)
     
     perp = calculate_perplexity(model, X_test, y_test)
-    generated_text = generate_sampled(model, encoder, hparams["seq_length"], 200, "Il y a bien longtemps, dans un pays lointain, ", 1)
     
+    prompt = "Il y a bien longtemps , dans un pays lointain , "
+    generated_text = generate_sampled(model, encoder, hparams["seq_length"], 500, prompt, 1)
     
+    log = {
+        "hyperparameters": hparams,
+        "history": history.history,
+        "summary": summary,
+        "sample": {
+            "prompt": prompt,
+            "output": generated_text[len(prompt):],
+        },
+        "metrics": {
+            "perplexity": perp,
+        },
+        "data_size": {
+            "train": len(X_train),
+            "val": len(X_val),
+            "test": len(X_test),
+        },
+        "comment": comment,
+    }
     
-    print("Perplexity:", perp)
+    if log_training:
+        add_to_log(log)
     
-    print(generated_text)
+    pprint(log, compact=True)
     
-    return model, encoder
+    return model, encoder, log
