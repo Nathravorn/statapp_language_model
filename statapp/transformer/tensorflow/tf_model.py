@@ -9,20 +9,24 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow.keras.layers import Dense, Embedding, LayerNormalization, TimeDistributed
 
-this_file_dir = os.path.dirname(__file__)
-sys.path.append(os.path.dirname(this_file_dir))
-from common import get_positional_encodings, load_data, split_into_X_y, load_sets
+# this_file_dir = os.path.dirname(__file__)
+# sys.path.append(os.path.dirname(this_file_dir))
+from statapp.transformer.common import get_positional_encodings
+from statapp.common.preprocessing import load_data, encode_data, split_into_X_y
 
-#HParams
-seq_length = 32
-num_blocks = 2
-d_model = 128
-d_query = 128
-num_heads = 32
-target_vocab_size = 1000
+#Hyper Parameters
+hparams = {
+    "seq_length": 32,
+    "num_blocks": 2,
+    "d_model": 16,
+    # "d_query": 16,
+    "num_heads": 1,
+    "target_vocab_size": 1000,
 
-epochs = 2
-batch_size = 256
+    "epochs": 300,
+    "batch_size": 256,
+    "learning_rate": 1e-2,
+}
 
 def scaled_dot_product_attention(q, k, v):
     """Perform scaled dot-product attention on input tensors.
@@ -134,19 +138,19 @@ class EncoderBlock(tf.keras.Model):
         return ff_output
 
 def build_transformer(vocab_size):
-    inputs = tf.keras.Input(shape=(seq_length,), dtype='int32')
-    embedded = Embedding(vocab_size, d_model)(inputs) # (batch_size, seq_length, d_model)
-    pos_encodings = tf.constant(get_positional_encodings(seq_length, d_model), dtype=tf.float32)
+    inputs = tf.keras.Input(shape=(hparams["seq_length"],), dtype='int32')
+    embedded = Embedding(vocab_size, hparams["d_model"])(inputs) # (batch_size, seq_length, hparams["d_model"])
+    pos_encodings = tf.constant(get_positional_encodings(hparams["seq_length"], d_model), dtype=tf.float32)
     encoded = tf.math.add(embedded, pos_encodings, name="positional_encoding")
     
     x = encoded
-    for _ in range(num_blocks):
-        x = EncoderBlock(dim=d_model, num_heads=num_heads)(x)
+    for _ in range(hparams["num_blocks"]):
+        x = EncoderBlock(dim=hparams["d_model"], num_heads=hparams["num_heads"])(x)
     
-    x = TimeDistributed(Dense(d_model//8))(x)
-    x = tf.keras.layers.Reshape((seq_length*d_model//8,))(x)
+    x = TimeDistributed(Dense(hparams["d_model"]//8))(x)
+    x = tf.keras.layers.Reshape((hparams["seq_length"]*hparams["d_model"]//8,))(x)
     
-    x = Dense(d_model, activation="relu")(x)
+    x = Dense(hparams["d_model"], activation="relu")(x)
     outputs = Dense(vocab_size, activation="softmax")(x)
     
     model = tf.keras.Model(inputs=inputs, outputs=outputs) # (batch_size, seq_length, vocab_size)
@@ -196,21 +200,21 @@ def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
 
 def main(tokens="subwords"):
     text = load_data("data/fr.train.top1M.txt", sample=0.000002)
-    X, encoder = encode_data(text, tokens="subwords")
+    X, encoder = encode_data(text, tokens="subwords", target_vocab_size=hparams["target_vocab_size"])
     train, test = train_test_split(X, test_size=0.0005, shuffle=False)
     train, val  = train_test_split(train, test_size=0.1, shuffle=False)
     vocab_size = encoder.vocab_size
     
-    X_train, y_train = split_into_X_y(train, seq_length, one_hot_encode_y=True, vocab_size=vocab_size)
-    X_test, y_test = split_into_X_y(test, seq_length, one_hot_encode_y=True, vocab_size=vocab_size)
-    X_val, y_val = split_into_X_y(val, seq_length, one_hot_encode_y=True, vocab_size=vocab_size)
+    X_train, y_train = split_into_X_y(train, hparams["seq_length"], one_hot_encode_y=True, vocab_size=vocab_size)
+    X_test, y_test = split_into_X_y(test, hparams["seq_length"], one_hot_encode_y=True, vocab_size=vocab_size)
+    X_val, y_val = split_into_X_y(val, hparams["seq_length"], one_hot_encode_y=True, vocab_size=vocab_size)
     
     # Form model
     model = build_transformer(vocab_size=vocab_size)
     # from_logits: Whether y_pred is expected to be a logits tensor
     model.compile(
         # loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
-        optimizer=tf.keras.optimizers.Adam(learning_rate),
+        optimizer=tf.keras.optimizers.Adam(hparams["learning_rate"]),
         loss=tf.keras.losses.CategoricalCrossentropy(),
         metrics=[tf.keras.metrics.CategoricalAccuracy()],
     )
@@ -222,16 +226,19 @@ def main(tokens="subwords"):
         X_train,
         y_train,
         # steps_per_epoch=np.ceil(len(X_train)/batch_size),
-        batch_size=batch_size,
-        epochs=epochs,
+        batch_size=hparams["batch_size"],
+        epochs=hparams["epochs"],
         validation_data=(X_val, y_val),
     )
     # print(history.history)
     
     perp = calculate_perplexity(model, X_test, y_test)
+    generated_text = generate_sampled(model, encoder, hparams["seq_length"], 200, "Il y a bien longtemps, dans un pays lointain, ", 1)
+    
+    
+    
     print("Perplexity:", perp)
     
-    generated_text = generate_sampled(model, encoder, seq_length, 200, "Il y a bien longtemps, dans un pays lointain où les oiseaux", 1)
     print(generated_text)
     
     return model, encoder
