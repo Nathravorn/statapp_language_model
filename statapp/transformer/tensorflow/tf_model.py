@@ -181,33 +181,36 @@ def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power
     
     return encoder.decode(text)
 
-def calculate_perplexity(model, X_test, y_test):
+def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     probas = []
     for X, y in tqdm(zip(X_test, y_test), total=len(X_test)):
         y = np.argmax(y)
         y_pred = model.predict(X.reshape(1, -1))[0]
         probas.append(y_pred[y])
     
-    probas = np.array(probas)
+    probas = np.array(probas) + epsilon
     entropy = np.mean(-np.log2(probas))
     perplexity = 2**entropy
     
     return perplexity
 
 def main(tokens="subwords"):
-    train, val, test, encoder = load_sets(tokens=tokens, sample=0.002, target_vocab_size=target_vocab_size)
+    text = load_data("data/fr.train.top1M.txt", sample=0.000002)
+    X, encoder = encode_data(text, tokens="subwords")
+    train, test = train_test_split(X, test_size=0.0005, shuffle=False)
+    train, val  = train_test_split(train, test_size=0.1, shuffle=False)
     vocab_size = encoder.vocab_size
     
-    X_train, y_train = split_into_X_y(train, seq_length, vocab_size)
-    X_test, y_test = split_into_X_y(test, seq_length, vocab_size)
-    X_val, y_val = split_into_X_y(val, seq_length, vocab_size)
+    X_train, y_train = split_into_X_y(train, seq_length, one_hot_encode_y=True, vocab_size=vocab_size)
+    X_test, y_test = split_into_X_y(test, seq_length, one_hot_encode_y=True, vocab_size=vocab_size)
+    X_val, y_val = split_into_X_y(val, seq_length, one_hot_encode_y=True, vocab_size=vocab_size)
     
     # Form model
     model = build_transformer(vocab_size=vocab_size)
     # from_logits: Whether y_pred is expected to be a logits tensor
     model.compile(
         # loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
-        optimizer=tf.keras.optimizers.Adam(1e-3),
+        optimizer=tf.keras.optimizers.Adam(learning_rate),
         loss=tf.keras.losses.CategoricalCrossentropy(),
         metrics=[tf.keras.metrics.CategoricalAccuracy()],
     )
