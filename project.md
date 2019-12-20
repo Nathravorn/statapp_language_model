@@ -6,6 +6,7 @@
     [ ] Try the TD Dense approach and log the results
     [ ] Try the Hyperparameter approach and log the results
 [ ] Make SparseCategoricalCrossentropy work and use it
+[?] Implement masking
 
 ## Common
 [ ] Implement general sampling methods
