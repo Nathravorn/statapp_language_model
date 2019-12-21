@@ -2,9 +2,7 @@
 ## Tensorflow
 [X] Implement automatic logging of all training attempts
 [X] Overfit the model on a small dataset -> See `log.md`
-[ ] Dealing with the ratio (see log)
-    [ ] Try the TD Dense approach and log the results
-    [ ] Try the Hyperparameter approach and log the results
+[X] Implement output into embedding space
 [ ] Make SparseCategoricalCrossentropy work and use it
 [?] Implement masking
 

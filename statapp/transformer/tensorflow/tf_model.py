@@ -22,15 +22,15 @@ from statapp.common.utils import NumpyEncoder
 #Hyper Parameters
 hparams = {
     "seq_length": 32,
-    "num_blocks": 1,
-    "d_model": 16,
+    "num_blocks": 4,
+    "d_model": 64,
     # "d_query": 16,
-    "num_heads": 1,
+    "num_heads": 8,
     "target_vocab_size": 1000,
 
     "epochs": 600,
     "batch_size": 256,
-    "learning_rate": 1e-2,
+    "learning_rate": 1e-3,
 }
 
 def scaled_dot_product_attention(q, k, v):
@@ -144,7 +144,8 @@ class EncoderBlock(tf.keras.Model):
 
 def build_transformer(vocab_size):
     inputs = tf.keras.Input(shape=(hparams["seq_length"],), dtype='int32')
-    embedded = Embedding(vocab_size, hparams["d_model"])(inputs) # (batch_size, seq_length, hparams["d_model"])
+    embedding = Embedding(vocab_size, hparams["d_model"])
+    embedded = embedding(inputs) # (batch_size, seq_length, d_model)
     pos_encodings = tf.constant(get_positional_encodings(hparams["seq_length"], hparams["d_model"]), dtype=tf.float32)
     encoded = tf.math.add(embedded, pos_encodings, name="positional_encoding")
     
@@ -158,9 +159,15 @@ def build_transformer(vocab_size):
     x = tf.keras.layers.Reshape((hparams["seq_length"]*hparams["d_model"],))(x)
     
     # x = Dense(hparams["d_model"], activation="relu")(x)
-    outputs = Dense(vocab_size, activation="softmax")(x)
+    x = Dense(hparams["d_model"], activation="linear")(x)
     
-    model = tf.keras.Model(inputs=inputs, outputs=outputs) # (batch_size, seq_length, vocab_size)
+    # Apply inverse embedding transform to get output of size vocab_size
+    # x = tf.einsum("xn,nm->xm", x, embedding.variables[0])
+    x = (embedding.variables[0] @ x[..., None])[..., 0]
+    print("SHAPE", tf.shape(x))
+    x = tf.nn.softmax(x)
+    
+    model = tf.keras.Model(inputs=inputs, outputs=x) # (batch_size, seq_length, vocab_size)
     
     return model
 
