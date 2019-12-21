@@ -4,7 +4,28 @@
 In id 2 (and previous silent attempts), I tried to overfit a very small set with no success. This is due to the fact that I had added bottlenecks after the encoder blocks in order to restrict the number of parameters concentrated in the final dense. This bottlenecking was very agressive, so I removed it in id 3 and sure enough, after enough epochs the model finally started to learn the training set by heart. It still needed a few epochs to fully overfit.
 Id 4 shows a good example of successful "rote learning" of the training set.
 
-The problem with this approach is that as you can see from id 4's summary, the number of parameters in the final dense layers is extremely high.
+The problem with this approach is that as you can see from id 4's summary, the number of parameters in the final dense layers is extremely high:
+
+    id 4
+    _________________________________________________________________
+    Layer (type)                 Output Shape              Param #   
+    =================================================================
+    input_18 (InputLayer)        [(None, 32)]              0         
+    _________________________________________________________________
+    embedding_17 (Embedding)     (None, 32, 16)            4112      
+    _________________________________________________________________
+    tf_op_layer_positional_encod [(None, 32, 16)]          0         
+    _________________________________________________________________
+    encoder_block_28 (EncoderBlo (None, 32, 16)            1152      
+    _________________________________________________________________
+    reshape_16 (Reshape)         (None, 512)               0         
+    _________________________________________________________________
+    dense_158 (Dense)            (None, 257)               131841    
+    =================================================================
+    Total params: 137,105
+    Trainable params: 137,105
+    Non-trainable params: 0
+    _________________________________________________________________
 
 ### Calculations
 - The number of parameters within the final dense layers is approximately equal to `seq_length * d_model * vocab_size`. In id 4, that's ~130K params.
@@ -96,4 +117,39 @@ Using the HPs from our id 4 model we now have: `n_params_dense = 8K` and `ratio 
 
 Increasing `num_blocks` a bit will put the ratio close to 1.
 
+Successfully overfit with:
 
+    id 6
+    _________________________________________________________________
+    Layer (type)                 Output Shape              Param #
+    =================================================================
+    input_30 (InputLayer)        [(None, 32)]              0
+    _________________________________________________________________
+    embedding_29 (Embedding)     (None, 32, 64)            16448
+    _________________________________________________________________
+    tf_op_layer_positional_encod [(None, 32, 64)]          0
+    _________________________________________________________________
+    encoder_block_49 (EncoderBlo (None, 32, 64)            16896
+    _________________________________________________________________
+    encoder_block_50 (EncoderBlo (None, 32, 64)            16896
+    _________________________________________________________________
+    encoder_block_51 (EncoderBlo (None, 32, 64)            16896
+    _________________________________________________________________
+    encoder_block_52 (EncoderBlo (None, 32, 64)            16896
+    _________________________________________________________________
+    reshape_28 (Reshape)         (None, 2048)              0
+    _________________________________________________________________
+    dense_266 (Dense)            (None, 64)                131136
+    _________________________________________________________________
+    tf_op_layer_strided_slice_17 [(None, 64, 1)]           0
+    _________________________________________________________________
+    tf_op_layer_matmul_8 (Tensor [(None, 257, 1)]          0
+    _________________________________________________________________
+    tf_op_layer_strided_slice_18 [(None, 257)]             0
+    _________________________________________________________________
+    tf_op_layer_Softmax_6 (Tenso [(None, 257)]             0
+    =================================================================
+    Total params: 215,168
+    Trainable params: 215,168
+    Non-trainable params: 0
+    _________________________________________________________________
