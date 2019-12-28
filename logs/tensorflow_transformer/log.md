@@ -153,3 +153,33 @@ Successfully overfit with:
     Trainable params: 215,168
     Non-trainable params: 0
     _________________________________________________________________
+
+## 2019-12-28 - Behavior of overfit models
+Once a model is maximally overfit on its training set, it is interesting to study its behavior when performing inference conditioned on a sequence not present in the training set.
+
+### Model confidence
+Since the model is trained with cross_entropy, a maximally overfit model will output something close to a dirac distribution (a distribution with assigns probability 1 to a single value and 0 to everything else) when conditioned on a sequence present in the training set.
+We can verify this using the model id 6. For each sample in the training and the test set, we predict the conditional distribution of the next token and record the highest probability. Then we compute statistics for these values:
+
+- train
+    - mean: 0.993
+    - min: 0.97
+    - max: 0.999
+- test
+    - mean: 0.74
+    - min: 0.30
+    - max: 0.99
+
+On average, the model is much less confident in its predictions on the test set, as expected.
+This should not be the case in a non-overfit model.
+
+### Predicted sequences
+Several behaviors may be expected from the model when its conditional distribution is iteratively sampled to generate sequences of tokens.
+
+1. The model may fall back to some of the examples seen in the training set. This is likely to happen if its seq_length is small or if it learned to use only the last few tokens to predict the next one.
+2. The model may be unable to make any coherent predictions when not conditioned on sequences it saw during training.
+
+In the case of our models, it seems the latter is the norm. See the sample for id 6:
+
+- prompt: "Il y a bien longtemps , dans un pays lointain , "
+- output: " a ent ea ies\u001clee desdn ieoe  esoJ eu na d iu ae n' n ee te  diu  nu Jyumdeuu  e noraunsaienorni ep\u001d  ao/ti ndi d e  au eesdr n ne au a ir ne les ls p' i iti  ptshii /tiqtp op ariiiee  rp iro iee 'ap  p iiiiittpr phpri\u0016ietqp ppaaiiiittet,p prrriitet p rrosiiiittptatopr a etitteuon dl nsaumee a  e cepao nJnrdeumie  n  leesaesdns ' e desdee  ee  es attle pa   s il iid etrp r \\itiq  trppr iiiiit etrar av  e   poiu i pae os, p iiiii\ufffd pprpiiiiqrrttpes  ioiiittp pr ioiretttuide, eatlees , p\ufffd ilaes at "
