@@ -1,25 +1,26 @@
 # Todo
 ## Tensorflow
-[X] Implement automatic logging of all training attempts
-[X] Overfit the model on a small dataset -> See `logs/tensorflow_transformer/log.md`
-[X] Implement output into embedding space -> See `logs/tensorflow_transformer/log.md`
-[ ] Make SparseCategoricalCrossentropy work and use it
-[?] Implement masking
+
+    [X] Implement automatic logging of all training attempts
+    [X] Overfit the model on a small dataset -> See `logs/tensorflow_transformer/log.md`
+    [X] Implement output into embedding space -> See `logs/tensorflow_transformer/log.md`
+    [ ] Make SparseCategoricalCrossentropy work and use it
+    [?] Implement masking
 
 ## Common
-[ ] Implement general sampling methods
-    [ ] Individual token sampling
-        [ ] Implement temperature sampling with fixed k
-        [ ] Implement nucleus method in temperature sampling
-        [ ] Implement penalized sampling (see CTRL paper section 4.1)
-    [ ] Sequence sampling
-        [ ] Default
-        [ ] Beam search
 
+    [ ] Implement general sampling methods
+        [ ] Individual token sampling
+            [ ] Implement temperature sampling with fixed k
+            [ ] Implement nucleus method in temperature sampling
+            [ ] Implement penalized sampling (see CTRL paper section 4.1)
+        [ ] Sequence sampling
+            [ ] Default
+            [ ] Beam search
 
 ## Documentation
-[ ] Add doc on `common.preprocessing` to README.
-[ ] Add doc on `common.sampling` to README.
+    [ ] Add doc on `common.preprocessing` to README.
+    [ ] Add doc on `common.sampling` to README.
 
 
 # Ideas on controlling inference
