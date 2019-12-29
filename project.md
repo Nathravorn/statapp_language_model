@@ -1,6 +1,5 @@
 # Todo
 ## Tensorflow
-
     [X] Implement automatic logging of all training attempts
     [X] Overfit the model on a small dataset -> See `logs/tensorflow_transformer/log.md`
     [X] Implement output into embedding space -> See `logs/tensorflow_transformer/log.md`
@@ -8,7 +7,6 @@
     [?] Implement masking
 
 ## Common
-
     [ ] Implement general sampling methods
         [ ] Individual token sampling
             [ ] Implement temperature sampling with fixed k
