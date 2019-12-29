@@ -249,7 +249,7 @@ def add_to_log(entry, path=None, auto_add=["id", "date"]):
     with open(path, "w") as file:
         json.dump(log, file, indent=4, sort_keys=True, cls=NumpyEncoder)
 
-def main(tokens="subwords", log_training=True, comment=""):
+def main(log_training=True, comment=""):
     text = load_data("data/fr.train.top1M.txt", sample=0.000002)
     X, encoder = encode_data(text, tokens="subwords", target_vocab_size=hparams["target_vocab_size"])
     train, test = train_test_split(X, test_size=0.1, shuffle=False)
