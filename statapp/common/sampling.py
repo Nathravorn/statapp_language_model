@@ -26,7 +26,7 @@ def sample_from_distribution(scores, encoder=None, temperature=1, top_k=5, proba
             If None, no repetition penalty is applied.
             Default: None.
         repetition_penalty (float): Optional. How much to discourage choosing a token which is present in the previous sequence.
-            Probabilities are transformed as: p[i] = p[i]**(1/T*R[i]) / sum(p),
+            Probabilities are transformed as: p[i] = p[i]**(R[i]/T) / sum(p),
             where T is the temperature and R[i] is equal to this parameter if the
             corresponding token is present in the previous sequence, 1 otherwise.
             repetition_penalty = 1 is equivalent to no repetition penalty.
@@ -48,7 +48,7 @@ def sample_from_distribution(scores, encoder=None, temperature=1, top_k=5, proba
         penalties[previous_sequence] = repetition_penalty
     
     # Apply temperature transform
-    scores = scores ** (1 / (temperature * penalties))
+    scores = scores ** (penalties / temperature)
     
     # If the proba_threshold parameter is set, override the top_k parameter.
     if proba_threshold is not None:
