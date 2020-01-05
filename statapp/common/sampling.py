@@ -1,9 +1,9 @@
 import numpy as np
+from tqdm import tqdm
 
-
-def sample_from_distribution(scores, encoder=None, temperature=1, top_k=5, proba_threshold=None, previous_sequence=None, repetition_penalty=1.2):
+def sample_from_distribution(scores, temperature=1, top_k=5, proba_threshold=None, previous_sequence=None, repetition_penalty=1.2):
     """Sample a token from a distribution.
-    
+
     Args:
         scores (array-like): Sequence of scores for next token, which are normalized and interpreted as probabilities.
         temperature (float): Optional. Determines how to transform probabilities before sampling.
@@ -31,62 +31,94 @@ def sample_from_distribution(scores, encoder=None, temperature=1, top_k=5, proba
             corresponding token is present in the previous sequence, 1 otherwise.
             repetition_penalty = 1 is equivalent to no repetition penalty.
             Default: 1.2 (from CTRL paper).
-    
+
     Returns:
         int: The sampled index from the distribution.
-    
+
     Example:
         In: sample_from_distribution([0.1, 0.5, 0.4], temperature=0.1)
         Out: 1
     """
     scores = np.array(scores).reshape(-1)
     scores = scores / scores.sum()
-    
+
     # Construct repetition penalty vector
     penalties = np.ones(len(scores))
     if previous_sequence is not None:
         penalties[previous_sequence] = repetition_penalty
-    
+
     # Apply temperature transform
     scores = scores ** (penalties / temperature)
-    
+
     # If the proba_threshold parameter is set, override the top_k parameter.
     if proba_threshold is not None:
         sorted_scores = scores[np.argsort(-scores)] # Sorted in descending order
         top_k = (sorted_scores.cumsum() >= proba_threshold).argmax() + 1
-    
-    # If top_k <= 0, sample from whole array of scores.
+
+    # If top_k <= 0 or top_k is larger than the vocabulary, sample from whole array of scores.
     if (top_k <= 0) or (top_k > len(scores)):
         top_k = len(scores)
-    
+
     # Construct top_scores array with length top_k
     top_indices = np.argsort(-scores)[:top_k]
     top_scores = scores[top_indices]
     top_scores = top_scores / top_scores.sum()
-    
+
     # Sample from top_scores
     chosen_index_in_top_scores = np.random.choice(np.arange(top_k), p=top_scores)
     chosen_index_in_scores = top_indices[chosen_index_in_top_scores]
-    
+
     return chosen_index_in_scores
 
 
-def sample_sequence(predictor, sequence, encoder=None, seq_length=None, **kwargs):
-    """
+def sample_token_sequence(predictor, sequence, gen_length=100, **kwargs):
+    """Sample a sequence of tokens from a predictor.
+    At each step, will pass the previous sequence to the sampler for use in repetition penalty.
+
     Args:
-        predictor (function): Must take as input a sequence of tokens of length
-            seq_length and return a sequence of scores of length encoder.vocab_size.
-            The scores should sum to 1.
-        
-        sequence (string or list of ints): Sequence to pass to the predictor.
-            If string, must specify an encoder object. Then a string will be returned.
-            If list of ints,
-        
-        encoder (encoder object or None): Can be left as None if `sequence` is already a sequence of tokens.
-            Object with methods .encode(), .decode() and attribute vocab_size.
+        predictor (function): Must take as input a sequence of tokens and return
+            a sequence of scores of length encoder.vocab_size.
+            The scores are normalized and interpreted as probabilities.
+        sequence (list of ints): Initial sequence to pass to the predictor.
+        gen_length (int): How many tokens to generate.
+            Default: 100.
+        **kwargs: Keyword-arguments to be passed to the sample_from_distribution function. See its docstring for details.
+            Do not pass argument "previous_sequence" as it is handled by this function.
+
+    Returns:
+        list of ints: Tokens sampled from the predictor.
+    """
+    original_sequence_length = len(sequence)
+    for _ in tqdm(range(gen_length)):
+        scores = predictor(sequence)
+        token = sample_from_distribution(scores, previous_sequence=sequence, **kwargs)
+        sequence.append(token)
+
+    return sequence[original_sequence_length:]
+
+
+def sample_string_sequence(predictor, sequence, encoder, gen_length=100, **kwargs):
+    """Sample a string sequence from a predictor using an encoder.
+    Wrapper for `sample_token_sequence`.
+
+    Args:
+        predictor (function): Must take as input a sequence of tokens and return
+            a sequence of scores of length encoder.vocab_size.
+            The scores are normalized and interpreted as probabilities.
+        sequence (str): Initial sequence to pass to the predictor.
+        encoder (encoder object): Object with methods .encode() and .decode().
             .encode() must take in a string and output a corresponding sequence of tokens.
             .decode() must take in a sequence of tokens and output a corresponding string.
-            .vocab_size denotes the number of tokens in the vocabulary.
             Default: None.
+        gen_length (int): How many tokens to generate.
+            Default: 100.
+        **kwargs: Keyword-arguments to be passed to the sample_from_distribution function. See its docstring for details.
+            Do not pass argument "previous_sequence" as it is handled by this function.
+
+    Returns:
+        str: Sampled text.
     """
-    pass
+    token_sequence = encoder.encode(sequence)
+    token_sequence = sample_token_sequence(predictor, token_sequence, gen_length=gen_length, **kwargs)
+
+    return encoder.decode(token_sequence)
