@@ -7,8 +7,6 @@ import math
 import sys
 import torchtext
 sys.path.append("..")
-#from common import get_positional_encodings
-import nltk
 
 # Hyperparamètres
 
