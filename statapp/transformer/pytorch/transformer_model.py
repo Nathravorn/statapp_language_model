@@ -15,7 +15,7 @@ nb_heads = 8
 vector_size = 512
 vocab_size = 1000
 head_size = vector_size//nb_heads
-ffn_hidden_size = 100
+ffn_hidden_size = 2048 #vector_size*4 pour gpt-2
 seq_length = 15
 attention_features_size = 5
 
@@ -85,9 +85,10 @@ class MultiHeadAttention(nn.Module):
         self.w_v = nn.Linear(vector_size, vector_size)
         self.w_0 = nn.Linear(vector_size, vector_size)
         
-    def mask_w(w):
-        #Mask ?
-        return w
+    def attention_mask(w):
+        #Mask matrix
+        mask = torch.triu( torch.full((w.shape[-1],w.shape[-1]),(-math.inf)), diagonal=1)
+        return w + mask
     
     def reshape_w(self, w):
         #reshape a matrix (batch_size, nb_inputs, vector_size)
@@ -108,7 +109,7 @@ class MultiHeadAttention(nn.Module):
         # v size (batch_size, nb_heads, nb_inputs, head_size)
         
         w = torch.matmul(q, k.transpose(-1,-2)) / math.sqrt(k.shape[-1])
-        w = torch.softmax(w, dim=-1)
+        w = torch.softmax(self.attention_mask(w), dim=-1)
         # w size (batch_size, nb_heads, nb_inputs, nb_inputs)
         
         a = torch.matmul(w, v)
