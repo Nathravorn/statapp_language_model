@@ -7,34 +7,37 @@ import math
 import sys
 import torchtext
 sys.path.append("..")
+from common import get_positional_encodings
 
 # Hyperparamètres
 
 nb_decoders = 6
-nb_heads = 8
 vector_size = 512
-vocab_size = 1000
+nb_heads = 8
 head_size = vector_size//nb_heads
+vocab_size = 1000
 ffn_hidden_size = 2048 #vector_size*4 pour gpt-2
-seq_length = 15
-attention_features_size = 5
 
 
 class Transformer(nn.Module):
     "Whole transformer structure composed of stacked decoder blocks"
-    def __init__(self, decoder):
+    def __init__(self, vocab_size, decoder):
         super(Transformer, self).__init__()
         self.decoder = decoder
-        self.embedding = nn.Embedding(vocab_size, 4)
-        self.finalfc = nn.Linear(vector_size, vocab_size)
+        self.vocab_size = vocab_size
+        self.embedding = nn.Embedding(self.vocab_size, vector_size)
+        self.finalfc = nn.Linear(vector_size, self.vocab_size)
 
     def forward(self, x):
         
-        embedded = embedding(x)
+        embedded = self.embedding(x)
+        seq_length = x.shape[-2]
         pos_encodings = torch.tensor(get_positional_encodings(seq_length, vector_size))
         x = embedded + pos_encodings
         
         for x in range(nb_decoders):
+            #ALERTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #argh mais je passe dans le même decoder à chaque fois, quel andouille ! A CHANGER !
             x = self.decoder(x)
             
         x = F.softmax(self.finalfc(x))
