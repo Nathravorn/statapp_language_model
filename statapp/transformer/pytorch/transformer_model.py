@@ -33,9 +33,9 @@ class Transformer(nn.Module):
         embedded = self.embedding(x)
         seq_length = x.shape[-2]
         pos_encodings = torch.tensor(get_positional_encodings(seq_length, vector_size))
-        x = embedded + pos_encodings
+        x = torch.tensor(embedded + pos_encodings, dtype=torch.float32)
         
-        for x in range(nb_decoders):
+        for i in range(nb_decoders):
             #ALERTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             #argh mais je passe dans le même decoder à chaque fois, quel andouille ! A CHANGER !
             x = self.decoder(x)
@@ -50,13 +50,14 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
         self.multihead_attention = multihead_attention
         self.feedforward_network = feedforward_network
-        self.layernorm = nn.modules.normalization.LayerNorm
+        #self.layernorm = nn.modules.normalization.LayerNorm(vector_size)
 
     def forward(self, x):
         #normalisation a la fin ou au debut ?
-        mha = self.multihead_attention(self.layernorm(x))
+        #appliquer la fonction de layernorm directement ou via self.layernorm ne donne pas le même résultat ! Etrange !
+        mha = self.multihead_attention(nn.modules.normalization.LayerNorm(vector_size)(x))
         x += mha
-        ffo = self.feedforward_network(self.layernorm(x))
+        ffo = self.feedforward_network(nn.modules.normalization.LayerNorm(vector_size)(x))
         x += ffo
         return x
 
@@ -104,6 +105,8 @@ class MultiHeadAttention(nn.Module):
         
         # x size (batch_size, nb_inputs, vector_size)
         # self.w_q(x) size (batch_size, nb_inputs, vector_size)
+        print(x)
+        print(x.shape)
         q = self.reshape_w(self.w_q(x))
         # q size (batch_size, nb_heads, nb_inputs, head_size)
         k = self.reshape_w(self.w_k(x))
