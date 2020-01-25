@@ -37,7 +37,7 @@ class Transformer(nn.Module):
         
         for i in range(nb_decoders):
             #ALERTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            #argh mais je passe dans le même decoder à chaque fois, quel andouille ! A CHANGER !
+            #argh mais je passe dans le même decoder à chaque fois, quelle andouille ! A CHANGER !
             x = self.decoder(x)
             
         x = F.softmax(self.finalfc(x))
@@ -89,7 +89,7 @@ class MultiHeadAttention(nn.Module):
         self.w_v = nn.Linear(vector_size, vector_size)
         self.w_0 = nn.Linear(vector_size, vector_size)
         
-    def attention_mask(w):
+    def attention_mask(self, w):
         #Mask matrix
         mask = torch.triu( torch.full((w.shape[-1],w.shape[-1]),(-math.inf)), diagonal=1)
         return w + mask
@@ -105,8 +105,6 @@ class MultiHeadAttention(nn.Module):
         
         # x size (batch_size, nb_inputs, vector_size)
         # self.w_q(x) size (batch_size, nb_inputs, vector_size)
-        print(x)
-        print(x.shape)
         q = self.reshape_w(self.w_q(x))
         # q size (batch_size, nb_heads, nb_inputs, head_size)
         k = self.reshape_w(self.w_k(x))
