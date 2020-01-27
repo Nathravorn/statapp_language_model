@@ -11,12 +11,13 @@ from common import get_positional_encodings
 
 # Hyperparamètres
 
-nb_decoders = 6
-vector_size = 512
-nb_heads = 8
+nb_decoders = 3
+vector_size = 40
+nb_heads = 2
 head_size = vector_size//nb_heads
+max_length = 10
 vocab_size = 1000
-ffn_hidden_size = 2048 #vector_size*4 pour gpt-2
+ffn_hidden_size = 160 #vector_size*4 pour gpt-2
 
 
 class Transformer(nn.Module):
@@ -38,6 +39,7 @@ class Transformer(nn.Module):
         for i in range(nb_decoders):
             #ALERTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             #argh mais je passe dans le même decoder à chaque fois, quelle andouille ! A CHANGER !
+            #Utiliser clone() (cf annotated transformer standford)
             x = self.decoder(x)
             
         x = F.softmax(self.finalfc(x))
@@ -55,10 +57,12 @@ class Decoder(nn.Module):
     def forward(self, x):
         #normalisation a la fin ou au debut ?
         #appliquer la fonction de layernorm directement ou via self.layernorm ne donne pas le même résultat ! Etrange !
-        mha = self.multihead_attention(nn.modules.normalization.LayerNorm(vector_size)(x))
-        x += mha
-        ffo = self.feedforward_network(nn.modules.normalization.LayerNorm(vector_size)(x))
-        x += ffo
+        ###mha = self.multihead_attention(nn.modules.normalization.LayerNorm(vector_size)(x))
+        ###mha = self.multihead_attention(x)
+        ###x += mha
+        ###ffo = self.feedforward_network(nn.modules.normalization.LayerNorm(vector_size)(x))
+        ###ffo = self.feedforward_network(x)
+        ###x += ffo
         return x
 
     
@@ -91,8 +95,9 @@ class MultiHeadAttention(nn.Module):
         
     def attention_mask(self, w):
         #Mask matrix
-        mask = torch.triu( torch.full((w.shape[-1],w.shape[-1]),(-math.inf)), diagonal=1)
-        return w + mask
+        ###mask = torch.triu( torch.full((w.shape[-1],w.shape[-1]),(-math.inf)), diagonal=1)
+        ###return w + mask
+        return w
     
     def reshape_w(self, w):
         #reshape a matrix (batch_size, nb_inputs, vector_size)
