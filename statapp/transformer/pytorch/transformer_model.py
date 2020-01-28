@@ -11,11 +11,11 @@ from common import get_positional_encodings
 
 # Hyperparamètres
 
-nb_decoders = 3
+nb_decoders = 1
 vector_size = 40
-nb_heads = 2
+nb_heads = 1
 head_size = vector_size//nb_heads
-max_length = 10
+max_length = 2
 vocab_size = 1000
 ffn_hidden_size = 160 #vector_size*4 pour gpt-2
 
@@ -32,9 +32,9 @@ class Transformer(nn.Module):
     def forward(self, x):
         
         embedded = self.embedding(x)
-        seq_length = x.shape[-2]
+        seq_length = embedded.shape[-2]
         pos_encodings = torch.tensor(get_positional_encodings(seq_length, vector_size))
-        x = torch.tensor(embedded + pos_encodings, dtype=torch.float32)
+        x = torch.tensor(torch.add(embedded, pos_encodings), dtype=torch.float32)
         
         for i in range(nb_decoders):
             #ALERTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -42,7 +42,7 @@ class Transformer(nn.Module):
             #Utiliser clone() (cf annotated transformer standford)
             x = self.decoder(x)
             
-        x = F.softmax(self.finalfc(x))
+        x = F.softmax(self.finalfc(x), dim=-1)
         return x
 
     
