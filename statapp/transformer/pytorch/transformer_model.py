@@ -57,12 +57,10 @@ class Decoder(nn.Module):
     def forward(self, x):
         #normalisation a la fin ou au debut ?
         #appliquer la fonction de layernorm directement ou via self.layernorm ne donne pas le même résultat ! Etrange !
-        ###mha = self.multihead_attention(nn.modules.normalization.LayerNorm(vector_size)(x))
-        ###mha = self.multihead_attention(x)
-        ###x += mha
-        ###ffo = self.feedforward_network(nn.modules.normalization.LayerNorm(vector_size)(x))
-        ###ffo = self.feedforward_network(x)
-        ###x += ffo
+        mha = self.multihead_attention(nn.modules.normalization.LayerNorm(vector_size)(x))
+        x = torch.add(x,mha)
+        ffo = self.feedforward_network(nn.modules.normalization.LayerNorm(vector_size)(x))
+        x = torch.add(x, ffo)
         return x
 
     
@@ -95,9 +93,9 @@ class MultiHeadAttention(nn.Module):
         
     def attention_mask(self, w):
         #Mask matrix
-        ###mask = torch.triu( torch.full((w.shape[-1],w.shape[-1]),(-math.inf)), diagonal=1)
-        ###return w + mask
-        return w
+        mask = torch.triu( torch.full((w.shape[-1],w.shape[-1]),(-math.inf)), diagonal=1)
+        w_masked = torch.add(w, mask)
+        return w_masked
     
     def reshape_w(self, w):
         #reshape a matrix (batch_size, nb_inputs, vector_size)
