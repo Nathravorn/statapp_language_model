@@ -13,9 +13,9 @@ from common import get_positional_encodings
 
 nb_decoders = 1
 vector_size = 40
-nb_heads = 1
+nb_heads = 2
 head_size = vector_size//nb_heads
-max_length = 2
+max_length = 3
 vocab_size = 1000
 ffn_hidden_size = 160 #vector_size*4 pour gpt-2
 
@@ -42,7 +42,7 @@ class Transformer(nn.Module):
             #Utiliser clone() (cf annotated transformer standford)
             x = self.decoder(x)
             
-        x = F.softmax(self.finalfc(x), dim=-1)
+        x = F.log_softmax(self.finalfc(x), dim=-1)
         return x
 
     
