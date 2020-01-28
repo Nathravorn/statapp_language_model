@@ -11,7 +11,7 @@ from common import get_positional_encodings
 
 # Hyperparamètres
 
-nb_decoders = 1
+nb_decoders = 3
 vector_size = 40
 nb_heads = 2
 head_size = vector_size//nb_heads
@@ -23,8 +23,9 @@ ffn_hidden_size = 160 #vector_size*4 pour gpt-2
 class Transformer(nn.Module):
     "Whole transformer structure composed of stacked decoder blocks"
     def __init__(self, vocab_size, decoder):
+        #Intégrer nb_decoders comme input
         super(Transformer, self).__init__()
-        self.decoder = decoder
+        self.decoders = nn.ModuleList([decoder for i in range(nb_decoders)])
         self.vocab_size = vocab_size
         self.embedding = nn.Embedding(self.vocab_size, vector_size)
         self.finalfc = nn.Linear(vector_size, self.vocab_size)
@@ -36,11 +37,8 @@ class Transformer(nn.Module):
         pos_encodings = torch.tensor(get_positional_encodings(seq_length, vector_size))
         x = torch.tensor(torch.add(embedded, pos_encodings), dtype=torch.float32)
         
-        for i in range(nb_decoders):
-            #ALERTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            #argh mais je passe dans le même decoder à chaque fois, quelle andouille ! A CHANGER !
-            #Utiliser clone() (cf annotated transformer standford)
-            x = self.decoder(x)
+        for decoder in self.decoders:
+            x = decoder(x)
             
         x = F.log_softmax(self.finalfc(x), dim=-1)
         return x
