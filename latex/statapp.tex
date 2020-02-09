@@ -1,8 +1,9 @@
 \input{preambule.tex}
 
-\title{}
+\title{Projet de statistiques appliquées}
 \author{Etienne Boisseau, Olivier Dulcy, Christos Katsoulakis, Eric Lavergne}
 \date{}
+\makeatletter
 
 \fancypagestyle{theme}{
 \fancyhead[L]{}
@@ -15,7 +16,40 @@
 \renewcommand{\headrulewidth}{1pt}}
 \pagestyle{theme}
 
+%New notation
+\newcommand{\dm}{d_{model}}
+
+
 \begin{document}
+
+\begin{titlepage}
+   \begin{center}
+       \vspace*{1cm}
+ 
+       \Huge
+       \textbf{Projet de statistique appliqué}
+ 
+       \vspace{0.5cm}
+       \LARGE
+        Les modèles de langue neuronaux
+ 
+       \vspace{1.5cm}
+ 
+       \textbf{Etienne Boisseau} \\
+       \textbf{Olivier Dulcy}\\
+       \textbf{Christos Katsoulakis}\\
+       \textbf{Eric Lavergne}
+ 
+       \vfill
+ 
+       \vspace{0.8cm}
+       \Large
+       Sous la direction de Benjamin Müller, INRIA \\
+       \large
+       Année 2019-2020
+ 
+   \end{center}
+\end{titlepage}
 
 \tableofcontents
 
@@ -138,6 +172,14 @@ où $X \in R^{p_i}, p_i \in \N^*$; $\sigma_i$ est une fonction non linéaire, ap
 C'est donc une fonction continue de $\R^p$ dans $\R^q$, où $(p,q) \in \N^2$. Afin de l'utiliser comme estimateur de la probabilité conditionnelle d'un symbole sachant les précédents (i.e. pour en faire un modèle de langue), il faut représenter l'ensemble des symboles précédents comme un vecteur de $R^p$ et les probabilités conditionnelles comme un vecteur de $R^q$.
 Les probabilités conditionnelles se représentent naturellement comme un vecteur de $R^{\vert V \vert}$ dont la somme des composantes fait 1.
 
+\begin{figure}[h]
+\begin{center}
+  \includegraphics[width=0.8\textwidth]{img/NN.png}
+  \caption{Illustration d'un réseau de neurones. Source : Wikipedia}
+\end{center}
+\end{figure}
+
+
 La représentation de l'entrée est sujette à plusieurs méthodes :
 \begin{itemize}
   \item le \textit{One-Hot Encoding} consiste à représenter chaque symbole précédent comme un vecteur de $R^{\vert V \vert}$ dont une composante vaut 1 et toutes les autres 0.
@@ -222,7 +264,155 @@ for i in [n+1...L]:
 return echantillon
 \end{verbatim}
 
+\section{Mesure de performance}
+
+Pour mesurer la performance de notre modèle de langue, nous utilisons la \og perplexité \fg{}. Il s'agit d'une mesure empruntée à la théorie de l'information, qui permet d'évaluer la performance d'une distribution de probabilité ou d'un modèle probabiliste à prédire un échantillon.
+
+\subsection{Perplexity}
+
+\begin{definition}
+La perplixity d'un modèle de probabilité $p$ est définie par :
+
+  \[ 2^{H(p)} = 2^{- \sum_{x}^{} p(x) \log_2(p(x))} \]
+\end{definition}
+
+\begin{definition}
+La perplixity d'un modèle probabiliste $p$ est définie par :
+  \[ b^{ \frac{1}{N} \sum_{i=1}^{N}  log_b p(x_i)} \]
+\end{definition}
+
+\newpage
+
+\section{Transformer}
+
+Le \og Transformer \fg{} est un modèle de deep learning dans le domaine du Traitement automatique du langage naturel (Natural Language Processing en anglais, abrégé NLP)
+introduit en 2017 dans l'article \og Attention Is All You Need \fg{}\cite{vaswani2017attention}. 
+Il vient apporter une amélioration à ce qui était fait jusqu'à présent avec les RNN (Recurrent Neural Network). 
+Le Transformer permet, à partir d'un texte en entrée, d'effectuer une traduction, un résumé ou encore de la génération de texte. \\
+
+La popularité de ce modèle a conduit à des modèles dérivés tels que 
+BERT (Bidirectional Encoder Representations from Transformers)\cite{devlin2018bert} ou encore GPT-2\cite{radford2019gpt2}.
+Une liste de Transformers est disponible à cette adresse : \href{https://github.com/huggingface/transformers}{github.com/huggingface/transformers}.
+
+\subsection{Vue globale}
+
+Comme expliqué en introduction, les RNN s'adaptent mal avec des séquences d'une grande longueur. 
+L'architecture générale du Transformer permet une meilleure parallélisation de l'apprentissage et utilise un autre mécanisme appelé \og l'Attention \fg{} qui permet
+de conserver une dépendance entre l'entrée et la sortie du Transformer.
+
+Voici un schéma de l'allule globale du Transformer :
+\begin{figure}[h]
+  \begin{center}
+  \includegraphics[width=0.5\textwidth]{img/architecture_transformer.png}
+  \end{center}
+  \caption{Architecture du Transformer, issu de \og Attention Is All You Need \fg{}\cite{vaswani2017attention}}
+  \label{fig:transformer}
+\end{figure}
+
+\subsection{Entrée du Transformer}
+
+En entrée du Transformer se situe une séquence de symboles. Dans l'exemple de la traduction, nous aurons une phrase à traduire.
+Dans le cas où nous souhaitons générer du texte, nous mettrons le début d'une phrase. \\
+
+Le Transformer, constitué de réseaux de neurones, ne comprend pas une séquence de symboles. Ainsi, les symboles en entrée seront transformés en vecteur
+de nombres pour pouvoir être interprêtable pour les composants du Transformer. Cette technique s'appelle le Word Embedding (ou plongement de mots). \\
+
+Il existe plusieurs méthodes pour avoir une représentation vectorielle des mots. 
+Par exemple, le Byte Pair Encoding (BPE)\cite{sennrich2016bpe} proposé en 2016 par Sennrich et al. pour 
+les réseaux de neurones a été utilisé pour le modèle GPT-2\cite{radford2019gpt2}. \\
+
+Nous noterons $\dm$ la taille des vecteurs représentant les mots en entrée du Transformer.
+
+\subsection{Partie Encoder}
+
+La partie gauche de la figure \ref{fig:transformer} est la partie Encoder. Elle est constituée d'une pile de $N$ blocs appelés \og Encoder \fg{}.
+Chaque bloc est constitué de deux couches, à savoir :
+\begin{itemize}
+\item Une Multi-Head Attention
+\item Une Couche de Normalisation
+\end{itemize}
+
+Après le Word Embedding, tous les vecteurs représentant les symboles en entrée du Transformer sont traités en parallèle, 
+ce qui constitue un avantage en terme de calcul contrairement aux RNN. Concrètement, tous les vecteurs sont assemblés sous forme d'une matrice.
+
+Par exemple, dans le cas de $N$ mots, si nous avons une représentation pour chaque mot de la forme : 
+
+\[ \forall 1 \leq i \leq N , \, x_i = 
+\begin{pmatrix}
+  x_{i,i} & x_{i,2} & \ldots & x_{i,\dm}
+\end{pmatrix}
+ \]
+
+alors la matrice en entrée est de la forme :
+\[ X = 
+\begin{pmatrix}
+  x_{1,1} & x_{1,2} & \ldots & x_{1,\dm} \\
+  x_{2,2} & x_{2,2} & \ldots & x_{2,\dm} \\
+  \vdots  & \vdots  &        & \vdots \\
+  x_{N,N} & x_{N,2} & \ldots & x_{N,\dm}
+\end{pmatrix}
+\]
+
+\subsubsection{Multi-Head Attention}
+
+Nous allons commencer par expliquer le calcul d'une seule Attention (aussi appelée Self-Attention) et nous généraliserons aux Multi-Head Attention après. \\
+
+Pour chaque vecteur en entrée, trois autres vecteurs sont calculés. Ces vecteurs sont nommés \og Query, Key et Value \fg{}.
+Ces trois vecteurs vont permettre de calculer \textbf{l'Attention}.
+Ils sont notés respectivement $q_i, k_i$ et $v_i$, où $i$ est l'indice du vecteur d'entrée. $q_i$ et $k_i$ sont de dimension
+$d_k \leq \dm$ et $v_i$ est de dimension $d_v \leq \dm$.
+Supposons $N$ vecteurs d'entrés. Ils sont calculés à partir des produits matriciels suivants :
+
+\[ \forall 1 \leq i \leq N,
+  \begin{cases}
+  q_i = x_i \cdot W^Q \\
+  k_i = x_i \cdot W^K \\
+  v_i = x_i \cdot W^V \\
+  \end{cases}  \]
+
+Comme avec le vecteur $X$ représentant tous les vecteurs en entrée du Transformer, 
+on définit $Q$, $K$ et $V$ comme les matrices constituées respectivement des vecteurs $q_i$, $k_i$ et $v_i$.
+Cela revient aux calculs suivants :
+
+\[ Q = X \cdot W^Q  \]
+\[ K = X \cdot W^K  \]
+\[ V = X \cdot W^V  \]
+
+L'Attention, telle que défini dans l'article \cite{vaswani2017attention} est calculé matriciellement par :
+
+\[ \text{softmax}\left( \frac{Q \cdot K^T}{\sqrt{d_k}} \right) V \]
+
+Ainsi, chaque vecteur en entrée se voit attribuer un \og score \fg{} d'Attention. Le score du vecteur $x_i$ dépend de $x_i$ mais 
+aussi des autres $x_j$ pour $1 \leq i \neq j \leq N$. Cependant, la dépendance du score de $x_i$ est parfois si forte que les
+dépendances issues des vecteurs $x_j$ sont négligeables, ce qui n'est pas souhaitable, car nous souhaitons
+conserver ces autres dépendances. Par exemple, c'est le cas d'un pronom relatif (comme \og Il \fg{}) qui doit se référer 
+à un autre mot dans la phrase (ici, son sujet). \\
 
 
+Pour palier ce problème, nous utilisons la Multi-Head Attention. Il s'agit d'effectuer plusieurs fois la Self-Attention
+mais avec d'autres matrices $W_h^Q, W_h^K$ et $W_h^V$ pour $1 \leq h \leq H$, où $H$ le nombre de Attention Head.
+
+Si nous notons $Z_h$ les matrices issues de chaque calcul de Self Attention, nous obtenons $H$ matrices. Nous concaténons
+ces matrices et nous les mutliplions avec une autre matrice de poids $W^O$, ce qui donne le calcul suivant :
+
+\[  \begin{pmatrix}
+    Z_1 & Z_2 & \ldots & Z_H
+  \end{pmatrix}
+  \cdot W^O = Z \]
+
+Cette dernière matrice, notée $Z$ est transmise à la couche suivante, qui est un Feed Forward Neural Network (FFNN). \\
+
+Ainsi, chaque bloc d'Encoder produit une sortie pour chaque entrée reçue. Cette sortie est transmise au bloc d'Encoder suivant. \\ 
+
+Cette procédure est effectuée $N$ fois. Par exemple, dans l'article \og Attention Is All You Need \fg{} \cite{vaswani2017attention}, $N=6$.
+
+
+\subsection{Partie Decoder}
+
+La partie droite de la figure \ref{fig:transformer} est la partie Decoder.
+\subsection{Sortie du Transformer}
+
+\bibliographystyle{plain}
+\bibliography{statapp}
 
 \end{document}
