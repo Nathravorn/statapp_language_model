@@ -17,14 +17,15 @@ from tensorflow.keras.layers import Dense, Embedding, LayerNormalization, TimeDi
 import statapp
 from statapp.transformer.common import get_positional_encodings
 from statapp.common.preprocessing import load_data, encode_data, split_into_X_y
-from statapp.common.utils import NumpyEncoder
+from statapp.common.utils import NumpyEncoder, add_to_log
+
+DATA="data/fr.train.top1M.txt"
 
 #Hyper Parameters
 hparams = {
     "seq_length": 32,
     "num_blocks": 4,
     "d_model": 64,
-    # "d_query": 16,
     "num_heads": 8,
     "target_vocab_size": 1000,
 
@@ -61,7 +62,11 @@ def scaled_dot_product_attention(q, k, v):
     return out
 
 def test_sdpa():
-    # Output should be [[550.    5.5]]
+    """Test the scaled dot-product attention function.
+    
+    Returns:
+        tf.Tensor of value [[550.    5.5]]
+    """
     np.set_printoptions(suppress=True)
 
     k = tf.constant([[10,0,0],
@@ -78,16 +83,13 @@ def test_sdpa():
     
     att = scaled_dot_product_attention(q, k, v)
     
-    print("q:", q)
-    print("k:", k)
-    print("v:", v)
-    print("out:", att)
+    return att
 
 class MultiHeadAttention(tf.keras.layers.Layer):
     def __init__(self, dim, num_heads):
         super(MultiHeadAttention, self).__init__()
         
-        assert dim % num_heads == 0
+        assert dim % num_heads == 0, "Dim is not divisible by num_heads"
         self.dim = dim
         self.num_heads = num_heads
         self.depth = self.dim // self.num_heads
@@ -212,45 +214,8 @@ def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     
     return perplexity
 
-def add_to_log(entry, path=None, auto_add=["id", "date"]):
-    """Add to the training log file the specified entry.
-    By default, adds a few automatically generated fields to the entry.
-    
-    Args:
-        entry (dict): Entry to add to the log.
-        path (str): Path to the log file.
-            Default: "folder_containing_statapp_package/logs/tensorflow_transformer/log.json"
-        auto_add (list of str): Keys to automatically add to the entry before logging.
-            Supported keys:
-                "id": A number equal to 1 + the maximum id in the current log.
-                "date": A string representing the current date and time.
-            Default: ["id", "date"].
-        add_id (bool): Whether to add "id" key to entry.
-            Default: True.
-    """
-    # Implement default path
-    if path is None:
-        path = os.path.join(os.path.dirname(statapp.__name__), "logs",  "tensorflow_transformer", "log.json")
-    
-    # Read log file
-    with open(path, "r") as file:
-        log = json.load(file)
-    
-    # Add auto fields
-    if "id" in auto_add:
-        current_max_id = max([el.get("id", 0) for el in log])
-        entry["id"] = current_max_id + 1
-    if "date" in auto_add:
-        entry["date"] = datetime.datetime.today().strftime("%Y-%m-%dT%H:%M:%S")
-    
-    log.append(entry)
-    
-    # Write log file
-    with open(path, "w") as file:
-        json.dump(log, file, indent=4, sort_keys=True, cls=NumpyEncoder)
-
 def main(log_training=True, comment=""):
-    text = load_data("data/fr.train.top1M.txt", sample=0.000002)
+    text = load_data(DATA, sample=0.000002)
     X, encoder = encode_data(text, tokens="subwords", target_vocab_size=hparams["target_vocab_size"])
     train, test = train_test_split(X, test_size=0.1, shuffle=False)
     train, val  = train_test_split(train, test_size=0.3, shuffle=False)
