@@ -130,7 +130,7 @@ class EncoderBlock(tf.keras.Model):
         super(EncoderBlock, self).__init__()
         self.dim = dim
         self.mha = MultiHeadAttention(dim, num_heads)
-        self.ff = Dense(dim)
+        self.ff = Dense(dim, activation="relu")
         
         self.norm_after_mha = LayerNormalization()
         self.norm_after_ff = LayerNormalization()
@@ -158,16 +158,17 @@ def build_transformer(vocab_size):
     # x = TimeDistributed(Dense(hparams["d_model"]//8))(x)
     # x = tf.keras.layers.Reshape((hparams["seq_length"]*hparams["d_model"]//8,))(x)
 
-    x = tf.keras.layers.Reshape((hparams["seq_length"]*hparams["d_model"],))(x)
+    x = tf.keras.layers.Reshape((hparams["seq_length"]*hparams["d_model"],), name="Reshape")(x)
     
     # x = Dense(hparams["d_model"], activation="relu")(x)
-    x = Dense(hparams["d_model"], activation="linear")(x)
+    x = Dense(hparams["d_model"], activation="linear", name="linear")(x)
     
     # Apply inverse embedding transform to get output of size vocab_size
     # x = tf.einsum("xn,nm->xm", x, embedding.variables[0])
     x = (embedding.variables[0] @ x[..., None])[..., 0]
     print("SHAPE", tf.shape(x))
-    x = tf.nn.softmax(x)
+
+    x = tf.nn.softmax(x, name="softmax")
     
     model = tf.keras.Model(inputs=inputs, outputs=x) # (batch_size, seq_length, vocab_size)
     
@@ -186,6 +187,9 @@ def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power
     Returns:
         tuple of strings: Generated tokens.
     """
+
+    print("Generating sampled...")
+
     text = encoder.encode(prompt)
     assert len(text) >= seq_length
     
@@ -196,9 +200,13 @@ def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power
         )[0]
         probas = probas**power
         probas = probas / probas.sum()
-        next = np.random.choice(np.arange(len(probas)), p=probas)
+        # 0 is excluded, reserved for padding
+        # otherwise, it throws an error
+        # See : https://github.com/tensorflow/datasets/issues/702
+        # Line 217-218 in tensorflow_datasets/core/features/text/subword_text_encoder.py
+        next = np.random.choice(np.arange(1, len(probas) + 1), p=probas)
         text.append(next)
-    
+
     return encoder.decode(text)
 
 def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
