@@ -400,11 +400,21 @@ ces matrices et nous les mutliplions avec une autre matrice de poids $W^O$, ce q
   \end{pmatrix}
   \cdot W^O = Z \]
 
-Cette dernière matrice, notée $Z$ est transmise à la couche suivante, qui est un Feed Forward Neural Network (FFNN). \\
 
-Ainsi, chaque bloc d'Encoder produit une sortie pour chaque entrée reçue. Cette sortie est transmise au bloc d'Encoder suivant. \\ 
+Cette dernière matrice, notée $Z$, subit une normalisation puis est transmise à la couche suivante qui est un Feed Forward Neural Network (FFNN).
+La sortie du FFNN est aussi normalisée. \\
 
-Cette procédure est effectuée $N$ fois. Par exemple, dans l'article \og Attention Is All You Need \fg{} \cite{vaswani2017attention}, $N=6$.
+Ainsi, chaque bloc d'Encoder produit une sortie pour chaque entrée reçue. Cette sortie est transmise au bloc d'Encoder suivant.
+Cette procédure est effectuée $N$ fois. \\
+
+Dans l'article \og Attention Is All You Need \fg{} \cite{vaswani2017attention}, les valeurs prises sont :
+
+\begin{itemize}
+  \item $N=6$
+  \item $H=8$
+  \item $\dm = 512$
+  \item $d_k = d_v = \dm/H = 64$
+\end{itemize}
 
 
 \subsection{Partie Decoder}
