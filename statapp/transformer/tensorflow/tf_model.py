@@ -34,7 +34,7 @@ hparams = {
     "learning_rate": 1e-3,
 }
 
-def scaled_dot_product_attention(q, k, v):
+def scaled_dot_product_attention(q, k, v, mask=False):
     """Perform scaled dot-product attention on input tensors.
     Only operates on the last two dimensions of input tensors.
     
@@ -50,14 +50,19 @@ def scaled_dot_product_attention(q, k, v):
     # assert q.shape[-2] == k.shape[-2]
     assert k.shape[-2] == v.shape[-2]
     
+    if mask:
+        mask_matrix = generate_mask_matrix(q.shape[-2])
+    else:
+        mask_matrix = tf.zeros((q.shape[-2], q.shape[-2]))
     
     dimension = tf.cast(q.shape[-1], dtype=tf.float32)
     
     scores = tf.matmul(q, k, transpose_b=True) # (..., seq_length, seq_length)
     scores = scores / tf.math.sqrt(dimension) # (..., seq_length, seq_length)
-    att_weights = tf.nn.softmax(scores, axis=1) # (..., seq_length, seq_length)
-    
-    out = tf.matmul(att_weights, v) # (..., seq_length, d_v)
+    scores = scores + np.finfo(np.float32).min * mask_matrix
+    scores = tf.nn.softmax(scores, axis=1) # (..., seq_length, seq_length)
+
+    out = tf.matmul(scores, v) # (..., seq_length, d_v)
     
     return out
 
@@ -69,21 +74,46 @@ def test_sdpa():
     """
     np.set_printoptions(suppress=True)
 
-    k = tf.constant([[10,0,0],
-                      [0,10,0],
-                      [0,0,10],
-                      [0,0,10]], dtype=tf.float32)  # (4, 3)
+    k = tf.constant(
+        [
+            [10, 0, 0],
+            [0, 10, 0],
+            [0, 0, 10],
+            [0, 0, 10],
+        ],
+        dtype=tf.float32
+    )
 
-    v = tf.constant([[   1,0],
-                      [  10,0],
-                      [ 100,5],
-                      [1000,6]], dtype=tf.float32)  # (4, 2)
+    v = tf.constant(
+        [
+            [1, 0],
+            [10, 0],
+            [100, 5],
+            [1000, 6],
+        ],
+        dtype=tf.float32
+    )
     
-    q = tf.constant([[0, 0, 10]], dtype=tf.float32)
+    q = tf.constant(
+        [
+            [0, 0, 10],
+            [0, 0, 10],
+            [0, 0, 10],
+            [0, 0, 10],
+        ],
+        dtype=tf.float32
+    )
     
-    att = scaled_dot_product_attention(q, k, v)
+    att = scaled_dot_product_attention(q, k, v, mask=True)
     
     return att
+
+def generate_mask_matrix(seq_length):
+    """Create a mask matrix to keep the model from attending to a token it must predict or to those that follow it.
+    Simply an upper-triangular matrix filled with ones (with zeros on the diagonal).
+    """
+    mask = 1 - tf.linalg.band_part(tf.ones((seq_length, seq_length)), -1, 0)
+    return mask
 
 class MultiHeadAttention(tf.keras.layers.Layer):
     def __init__(self, dim, num_heads):
@@ -97,7 +127,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.dense_Q = Dense(self.dim)
         self.dense_K = Dense(self.dim)
         self.dense_V = Dense(self.dim)
-    
+        
     def reshape_dense_output(self, x):
         """Reshape output from dense_{Q,K,V} by splitting the last dimension
         into heads, and reordering dimensions so that seq_length is
@@ -187,7 +217,6 @@ def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power
     Returns:
         tuple of strings: Generated tokens.
     """
-
     print("Generating sampled...")
 
     text = encoder.encode(prompt)
