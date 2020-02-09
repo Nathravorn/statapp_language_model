@@ -8,7 +8,7 @@
             "epochs": 2,
             "num_blocks": 2,
             "num_heads": 32,
-            "seq_length": 32,~
+            "seq_length": 32,
             "target_vocab_size": 1000
         },
         "id": 1,
@@ -8647,5 +8647,47 @@
             "prompt": "Il y a bien longtemps , dans un pays lointain , "
         },
         "summary": "Model: \"model_21\"\n_________________________________________________________________\nLayer (type)                 Output Shape              Param #   \n=================================================================\ninput_30 (InputLayer)        [(None, 32)]              0         \n_________________________________________________________________\nembedding_29 (Embedding)     (None, 32, 64)            16448     \n_________________________________________________________________\ntf_op_layer_positional_encod [(None, 32, 64)]          0         \n_________________________________________________________________\nencoder_block_49 (EncoderBlo (None, 32, 64)            16896     \n_________________________________________________________________\nencoder_block_50 (EncoderBlo (None, 32, 64)            16896     \n_________________________________________________________________\nencoder_block_51 (EncoderBlo (None, 32, 64)            16896     \n_________________________________________________________________\nencoder_block_52 (EncoderBlo (None, 32, 64)            16896     \n_________________________________________________________________\nreshape_28 (Reshape)         (None, 2048)              0         \n_________________________________________________________________\ndense_266 (Dense)            (None, 64)                131136    \n_________________________________________________________________\ntf_op_layer_strided_slice_17 [(None, 64, 1)]           0         \n_________________________________________________________________\ntf_op_layer_matmul_8 (Tensor [(None, 257, 1)]          0         \n_________________________________________________________________\ntf_op_layer_strided_slice_18 [(None, 257)]             0         \n_________________________________________________________________\ntf_op_layer_Softmax_6 (Tenso [(None, 257)]             0         \n=================================================================\nTotal params: 215,168\nTrainable params: 215,168\nNon-trainable params: 0\n_________________________________________________________________"
+    },
+    {
+        "comment": "",
+        "data_size": {
+            "test": 20,
+            "train": 293,
+            "val": 108
+        },
+        "date": "2020-02-10T01:06:49",
+        "history": {
+            "categorical_accuracy": [
+                0.020477816462516785
+            ],
+            "loss": [
+                5.590303892975374
+            ],
+            "val_categorical_accuracy": [
+                0.12962962687015533
+            ],
+            "val_loss": [
+                4.985894203186035
+            ]
+        },
+        "hyperparameters": {
+            "batch_size": 256,
+            "d_model": 64,
+            "epochs": 1,
+            "learning_rate": 0.001,
+            "num_blocks": 4,
+            "num_heads": 8,
+            "seq_length": 32,
+            "target_vocab_size": 1000
+        },
+        "id": 7,
+        "metrics": {
+            "perplexity": 147.67571783648347
+        },
+        "sample": {
+            "output": "\u0003\ufffd%!\ufffd\u001bK\ufffd\ufffd\u01df\ufffd\ufffd\ufffd\ufffdtW\ufffd\ufffd\ufffdf\ufffdQ\ufffd\ufffdf\ufffd+\ufffd\ufffdr\ufffd\ufffdk^j\u0019i\ufffd\ufffdduw\ufffd\ufffd1\ufffd\r\ufffd\u0000\u0015\u000b\ufffd$\ufffd)\ufffd6\u000f?N!\ufffd\u0018\ufffd\ufffd\u0018\ufffd\ufffd\u014eN\ufffde!\u0015\u0017\u0006\ufffd\ufffd\ufffd?\ufffdwk\ufffdf\ufffdYK)\ufffd\u000f\ufffdQ\ufffd\tUx\u001b\ufffd,)\ufffdK\ufffd)\ufffd\u0537\ufffd-\ufffd1*\ufffd\ufffd\b\ufffdjr\ufffds3\ufffd\\\u000e9\ufffdo9n\ufffd\u0015\ufffdBw\u001e\ufffd:\ufffd,\u000e\u001f\ufffd\u0013%\ufffd\ufffdw\ufffd\ufffd\u0014\ufffdML\ufffd\u001a^\ufffdL\ufffd\ufffdF;p\ufffd\u0006J\u001e\ufffd3\ufffdp\ufffdY\ufffd?|\ufffd\r()j\u0003(\ufffd\ufffdk+s\ufffd\u0018L\ufffdw\u00153\ufffdu\ufffd5\ufffd\n\ufffd\ufffd\u0010\u3161L\ufffde\u0289\ufffd\ufffd&?\ufffds\ufffdn\ufffd\ufffdF\ufffd\ufffd\ufffd\u0017\ufffd\ufffdm\u001bf\ufffdso)v;f\ufffd\ufffd\ufffd\ufffdk\u001bw]\ufffd{\u0000\ufffd\ufffdrY\ufffdK\ufffd\u0011\ufffdvHs\\EH1q\u001c\ufffd6\t\ufffdu]\ufffd*\ufffd\ufffd\ufffd\ufffdw.5\ufffd\ufffd\ufffduf(\ufffd*\ufffd\ufffd2\u000f\u0018v\ufffd\"\ufffd*\ufffd\ufffd\ufffd\u0015\u001a!\ufffd\ufffd[\ufffd6/:\ufffdCs\ufffd9\ufffd\ufffd\u007f|&\u0014( \ufffd(\ufffd;\ufffdy\ufffd\u0447&|{\ufffd\ufffd|\u0011\u0015\ufffd\ufffd\ufffd]\ufffdCEw\ufffd\ufffd\u03f1\ufffdx\ufffd\ufffd\ufffd\ufffd\ufffd\u0016\u000f\u0379R\ufffd\u0012\ufffd\ufffd\u0001\ufffd\ufffdi\ufffd\u0005!U\ufffdh\ufffd\bF|\rw\ufffdQ2\ufffd\ufffd\ufffd8`\\\ufffd/I\ufffd\u078ah*U\ufffd\ufffd\ufffdF\ufffd\ufffd\ufffd)]L\ufffd\u000e\ufffd\ufffdg\u007f\"s\ufffd\"\ufffd\u0006o\ufffd]\ufffd\ufffdd\ufffd\ufffdM\u000f+a\ufffd\u031e;(\ufffdL\u000b\ufffd\ufffd\ufffd\ufffd\u001b\ufffdGoMOuB\ufffd|\ufffd\r\ufffd!\ufffd\ufffdg\ufffd\ufffd\ufffd,-\ufffd\ufffdpO\ufffdn\ufffd\u0011L\ufffd\u000b\ufffd1\ufffd\ufffd(\ufffd",
+            "prompt": "Il y a bien longtemps , dans un pays lointain , "
+        },
+        "summary": "Model: \"model_4\"\n_________________________________________________________________\nLayer (type)                 Output Shape              Param #   \n=================================================================\ninput_5 (InputLayer)         [(None, 32)]              0         \n_________________________________________________________________\nembedding_4 (Embedding)      (None, 32, 64)            16384     \n_________________________________________________________________\ntf_op_layer_positional_encod [(None, 32, 64)]          0         \n_________________________________________________________________\nencoder_block_16 (EncoderBlo (None, 32, 64)            16896     \n_________________________________________________________________\nencoder_block_17 (EncoderBlo (None, 32, 64)            16896     \n_________________________________________________________________\nencoder_block_18 (EncoderBlo (None, 32, 64)            16896     \n_________________________________________________________________\nencoder_block_19 (EncoderBlo (None, 32, 64)            16896     \n_________________________________________________________________\nReshape (Reshape)            (None, 2048)              0         \n_________________________________________________________________\nlinear (Dense)               (None, 64)                131136    \n_________________________________________________________________\ntf_op_layer_strided_slice_8  [(None, 64, 1)]           0         \n_________________________________________________________________\ntf_op_layer_BatchMatMulV2_4  [(None, 256, 1)]          0         \n_________________________________________________________________\ntf_op_layer_strided_slice_9  [(None, 256)]             0         \n_________________________________________________________________\ntf_op_layer_softmax_4 (Tenso [(None, 256)]             0         \n=================================================================\nTotal params: 215,104\nTrainable params: 215,104\nNon-trainable params: 0\n_________________________________________________________________"
     }
 ]
