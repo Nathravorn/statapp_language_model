@@ -266,18 +266,58 @@ return echantillon
 
 \section{Mesure de performance}
 
-Pour mesurer la performance de notre modèle de langue, nous utilisons la \og perplexité \fg{}. Il s'agit d'une mesure empruntée à la théorie de l'information, qui permet d'évaluer la performance d'une distribution de probabilité ou d'un modèle probabiliste à prédire un échantillon.
+Afin d’évaluer si un modèle de langue est bon, nous devons définir une métrique qui rende 
+compte de ses performances.
+Dans le cadre de notre problème, un modèle est meilleur qu’un autre si étant donné une 
+suite de mots, il attribue une plus grande probabilité au mot suivant réel.  \\
 
-\subsection{Perplexity}
+Dans les tâches de NLP, la \og perplexité \fg{} est une façon d’évaluer les modèles de langues.
+Il s'agit d'une mesure empruntée à la théorie de l'information, qui permet d'évaluer la 
+performance d'une distribution de probabilité ou d'un modèle probabiliste à prédire un échantillon.
+
+\subsection{Perplexité}
+
+
+La perplexité repose sur la notion d’entropie.
+Initialement l’entropie a été définie dans le contexte de la thermodynamique, 
+mais elle est également utilisée en Machine Learning suivant la 
+définition de Shannon dans la théorie de l’information.
+
+La self-information $I(x)$ est la quantité d’information apportée par la réalisation de 
+l’évènement $\{X=x\}$, où $X$ est une variable aléatoire. On peut également la définir 
+comme la quantité de \og surprise \fg{} résultant de l’évènement $\{X=x\}$. Lorsqu’un évènement de 
+faible probabilité se produit, il apporte plus d’information/de surprise 
+qu’un évènement plus probable.
 
 \begin{definition}
-La perplixity d'un modèle de probabilité $p$ est définie par :
+
+  Soit $X$ une variable aléatoire de loi $P_X$. La self-information de mesurer $x$
+  comme la réalisation $X$ est définie par :
+
+  \[ I(x) = - \log\left(P_X(x)\right) \]
+
+\end{definition}
+
+Lorsque l'information est codée en bits, le logarithme est en base 2.
+
+\begin{definition}
+L'entropie de Shannon est définie comme l'espérance de la self-information :
+
+  \[ H(X) = \E[I(X)] = \E[-\log(\P(X))] = - \sum_{i=1}^{n} P(x_i)\log(P(x_i)) \]
+\end{definition}
+
+Elle s'interprète comme l'incertitude contenue dans une distribution de probabilité.
+C'est une mesure de la quantité moyenne d'information produite par une
+variable aléatoire.
+
+\begin{definition}
+La perplixité d'un modèle de probabilité $p$ est définie par :
 
   \[ 2^{H(p)} = 2^{- \sum_{x}^{} p(x) \log_2(p(x))} \]
 \end{definition}
 
 \begin{definition}
-La perplixity d'un modèle probabiliste $p$ est définie par :
+La perplixité d'un modèle probabiliste $p$ est définie par :
   \[ b^{ \frac{1}{N} \sum_{i=1}^{N}  log_b p(x_i)} \]
 \end{definition}
 

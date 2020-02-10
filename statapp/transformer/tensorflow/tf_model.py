@@ -82,7 +82,7 @@ def test_sdpa():
     
     q = tf.constant([[0, 0, 10]], dtype=tf.float32)
     
-    att = scaled_dot_product_attention(q, k, v)
+    att = scaled_dot_product_attention(q, k, v, True)
     
     return att
 
@@ -156,18 +156,10 @@ def build_transformer(vocab_size):
     for _ in range(hparams["num_blocks"]):
         x = EncoderBlock(dim=hparams["d_model"], num_heads=hparams["num_heads"])(x)
     
-    # x = TimeDistributed(Dense(hparams["d_model"]//8))(x)
-    # x = tf.keras.layers.Reshape((hparams["seq_length"]*hparams["d_model"]//8,))(x)
-
-    x = tf.keras.layers.Reshape((hparams["seq_length"]*hparams["d_model"],), name="Reshape")(x)
-    
-    # x = Dense(hparams["d_model"], activation="relu")(x)
-    x = Dense(hparams["d_model"], activation="linear", name="linear")(x)
+    x = TimeDistributed(Dense(hparams["d_model"]))(x)
     
     # Apply inverse embedding transform to get output of size vocab_size
-    # x = tf.einsum("xn,nm->xm", x, embedding.variables[0])
     x = (embedding.variables[0] @ x[..., None])[..., 0]
-    print("SHAPE", tf.shape(x))
 
     x = tf.nn.softmax(x, name="softmax")
     
