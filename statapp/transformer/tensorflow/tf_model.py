@@ -226,13 +226,26 @@ def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     
     return perplexity
 
-def main(log_training=True, comment=""):
-    text = load_data(DATA, sample=0.000002)
+def load_train_test_val_encoder(data=DATA, sample=2E-5):
+    """Load and encode the data, then return train, test and validation data sets
+
+    Args:
+        data (str): path to data
+        sample (float): size of sample (full dataset percent)
+
+    Returns:
+        train, test and validation data sets
+    """
+    text = load_data(data, sample=0.000002)
     X, encoder = encode_data(text, tokens="subwords", target_vocab_size=hparams["target_vocab_size"])
     train, test = train_test_split(X, test_size=0.1, shuffle=False)
     train, val  = train_test_split(train, test_size=0.3, shuffle=False)
     # see : tensorflow_datasets/core/features/text/subword_text_encoder.py
     # encoder.vocab_size returns 1 + len(self._subwords) + text_encoder.NUM_BYTES
+    return train, test, val, encoder
+
+def main(log_training=True, comment=""):
+    train, test, val, encoder = load_train_test_val(data=DATA, sample=2E-5)
     vocab_size = encoder.vocab_size - 1
     
     X_train, y_train = split_into_X_y(train, hparams["seq_length"], one_hot_encode_y=True, vocab_size=vocab_size)
@@ -268,6 +281,8 @@ def main(log_training=True, comment=""):
     
     prompt = "Il y a bien longtemps , dans un pays lointain , "
     generated_text = generate_sampled(model, encoder, hparams["seq_length"], 500, prompt, 1)
+    print("Texte généré")
+    print(generated_text)
     
     log = {
         "hyperparameters": hparams,
