@@ -2,29 +2,24 @@ import numpy as np
 import tensorflow_datasets as tfds
 
 
-def load_data(path, sample=1, split_on=" "):
-    """Load a text dataset, optionally sampling the data rounding at some splitting string.
+def load_data(path, sample=1, split_on="\n"):
+    """Load a text dataset and split it, optionally sampling the data.
     
     Args:
         path (str): Path to a text file.
         sample (float): (approximate) Proportion of the dataset to load. 1 loads everything.
             Default: 1.
         split_on (str): String to split dataset on, e.g. "\n".
-            When sampling, the dataset will be cut at the previous split_on substring.
-            Ignored if sample==1.
-            If None, samples the dataset by cutting at the previous character.
-            Default: " ".
+            Default: "\n".
     
     Returns:
-        string: Dataset.
+        list of strings: Dataset, split on specified character.
     """
     with open(path, "r", encoding="utf-8") as file:
-        text = file.read()
+        text = file.read().split(split_on)
     
     if sample != 1:
         text = text[:int(len(text)*sample)]
-        if split_on is not None:
-            text = text[:-text[::-1].find(split_on)-1]
     
     return text
     
