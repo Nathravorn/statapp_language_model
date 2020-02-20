@@ -155,8 +155,10 @@ def build_transformer(vocab_size):
     x = encoded
     for _ in range(hparams["num_blocks"]):
         x = EncoderBlock(dim=hparams["d_model"], num_heads=hparams["num_heads"])(x)
-    
-    x = TimeDistributed(Dense(hparams["d_model"]))(x)
+
+    x = tf.keras.layers.Reshape((hparams["seq_length"]*hparams["d_model"],), name="Reshape")(x)
+    x = Dense(hparams["d_model"], activation="linear", name="linear")(x)
+    #x = TimeDistributed(Dense(hparams["d_model"]))(x)
     
     # Apply inverse embedding transform to get output of size vocab_size
     x = (embedding.variables[0] @ x[..., None])[..., 0]
@@ -186,7 +188,7 @@ def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power
     text = encoder.encode(prompt)
     text = [ t-1 for t in text]
 
-    assert len(text) >= seq_length
+    assert len(text) >= seq_length, "Text encoded is {} length, which is less than {}".format(len(text), seq_length)
     
     for i in tqdm(range(nb_tokens_to_gen)):
         probas = model.predict(
@@ -218,7 +220,7 @@ def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     
     return perplexity
 
-def load_train_test_val_encoder(data=DATA, sample=2E-5):
+def load_train_test_val_encoder(data=DATA, sample=2E-5, target_vocab_size=hparams["target_vocab_size"]):
     """Load and encode the data, then return train, test and validation data sets
 
     Args:
@@ -228,8 +230,8 @@ def load_train_test_val_encoder(data=DATA, sample=2E-5):
     Returns:
         train, test and validation data sets
     """
-    text = load_data(data, sample=0.000002)
-    X, encoder = encode_data(text, tokens="subwords", target_vocab_size=hparams["target_vocab_size"])
+    text = load_data(data, sample=sample)
+    X, encoder = encode_data(text, tokens="subwords", target_vocab_size=target_vocab_size)
     train, test = train_test_split(X, test_size=0.1, shuffle=False)
     train, val  = train_test_split(train, test_size=0.3, shuffle=False)
     # see : tensorflow_datasets/core/features/text/subword_text_encoder.py
