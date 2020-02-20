@@ -42,15 +42,16 @@ def encode_data(text, tokens="subwords", target_vocab_size=1000):
         encoder object: object supporting the "encode" and "decode" methods,
             such as a tensorflow_datasets.features.text.SubwordTextEncoder.
     """
+    sentences = text.split('\n')
     if tokens=="subwords":
         encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-            text,
+            (s for s in sentences),
             target_vocab_size=target_vocab_size
         )
     
     elif tokens=="characters":
         encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-            text,
+            (s for s in sentences),
             target_vocab_size=target_vocab_size,
             max_subword_length=1,
         )
