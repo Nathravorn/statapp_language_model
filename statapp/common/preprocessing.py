@@ -60,37 +60,40 @@ def encode_data(text, tokens="subwords", target_vocab_size=1000):
     return encoded, encoder
 
 
-def split_into_X_y(samples, seq_length, one_hot_encode_y=False, vocab_size=None):
+def split_into_X_y(samples, seq_length=None):
     """Split a list of text samples into two lists: X, a list of "input" sequences of length seq_length,
-    and y, a list of "target" tokens (optioanlly one-hot-encoded) which correspond to the token following X.
+    and y, a list of "target" sentences which correspond to the sequences in X shifted by 1.
     
     Args:
-        samples (list of lists of tokens): Samples to split.
-        seq_length (int): Length of each sequence in X.
-        one_hot_encode_y (bool): Whether to one-hot encode the y vectors or keep them as ints.
-            Default: False.
-        vocab_size (int): Length of the one-hot encoding vectors for y.
-            Only necessary if one_hot_encode_y is True.
+        samples (list of lists of ints): Samples to split into X and y.
+        seq_length (int or None): Length of each sequence in X.
+            Sequences shorter than this will be padded with zeros at the end.
+            Sequences longer than this will be truncated.
+            If None, sequences are left as is.
+            Default: None.
     
     Returns:
         list of lists of tokens: X
-        list of one-hot-encoded tokens: y
+        list of lists of tokens: y
+        X and y have exactly the same shape.
     """
-    assert not (one_hot_encode_y and (vocab_size is None)), "vocab_size argument needs to be set in order to one-hot encode y."
+    # Preprocess sequences, padding or cutting
+    if seq_length is not None:
+        samples = [
+            sample[:seq_length]
+            + [0] * min(seq_length - len(sample), 0)
+            for sample in samples
+        ]
     
-    X = [samples[i:i+seq_length] for i in range(len(samples)-seq_length)]
-    y_integers = [
-        samples[i+seq_length]
-        for i in range(len(samples)-seq_length)
+    # Split sequences into X and y
+    X = [
+        sample[:-1]
+        for sample in samples
     ]
     
-    if one_hot_encode_y:
-        y = []
-        for index in y_integers:
-            one_hot_vector = np.zeros(vocab_size)
-            one_hot_vector[index] = 1
-            y.append(one_hot_vector)
-    else:
-        y = y_integers
+    y = [
+        sample[1:]
+        for sample in samples
+    ]
     
-    return np.array(X), np.array(y)
+    return X, y
