@@ -19,7 +19,7 @@ from statapp.transformer.common import get_positional_encodings
 from statapp.common.preprocessing import load_data, encode_data, split_into_X_y
 from statapp.common.utils import NumpyEncoder, add_to_log
 
-DATA="data/fr.train.top1M.txt"
+DATA = "data/fr.train.top1M.txt"
 
 #Hyper Parameters
 hparams = {
@@ -186,9 +186,7 @@ def build_transformer(vocab_size):
     for _ in range(hparams["num_blocks"]):
         x = EncoderBlock(dim=hparams["d_model"], num_heads=hparams["num_heads"])(x)
 
-    x = tf.keras.layers.Reshape((hparams["seq_length"]*hparams["d_model"],), name="Reshape")(x)
-    x = Dense(hparams["d_model"], activation="linear", name="linear")(x)
-    #x = TimeDistributed(Dense(hparams["d_model"]))(x)
+    x = TimeDistributed(Dense(hparams["d_model"]))(x)
     
     # Apply inverse embedding transform to get output of size vocab_size
     x = (embedding.variables[0] @ x[..., None])[..., 0]
