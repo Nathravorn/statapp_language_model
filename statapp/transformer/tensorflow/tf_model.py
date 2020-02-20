@@ -279,9 +279,9 @@ def main(log_training=True, comment=""):
     train, test, val, encoder = load_train_test_val_encoder(data=DATA, sample=2E-5)
     vocab_size = encoder.vocab_size - 1
     
-    X_train, y_train = split_into_X_y(train, hparams["seq_length"], one_hot_encode_y=True, vocab_size=vocab_size)
-    X_test, y_test = split_into_X_y(test, hparams["seq_length"], one_hot_encode_y=True, vocab_size=vocab_size)
-    X_val, y_val = split_into_X_y(val, hparams["seq_length"], one_hot_encode_y=True, vocab_size=vocab_size)
+    X_train, y_train = split_into_X_y(train)#, hparams["seq_length"])
+    X_test, y_test = split_into_X_y(test)#, hparams["seq_length"])
+    X_val, y_val = split_into_X_y(val)#, hparams["seq_length"])
     
     # Form model
     model = build_transformer(vocab_size=vocab_size)
