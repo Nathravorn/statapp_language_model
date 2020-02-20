@@ -67,6 +67,7 @@ def scaled_dot_product_attention(q, k, v, mask=False):
     
     return out
 
+
 def test_sdpa():
     """Test the scaled dot-product attention function.
     
@@ -109,12 +110,14 @@ def test_sdpa():
     
     return att
 
+
 def generate_mask_matrix(seq_length):
     """Create a mask matrix to keep the model from attending to a token it must predict or to those that follow it.
     Simply an upper-triangular matrix filled with ones (with zeros on the diagonal).
     """
     mask = 1 - tf.linalg.band_part(tf.ones((seq_length, seq_length)), -1, 0)
     return mask
+
 
 class MultiHeadAttention(tf.keras.layers.Layer):
     def __init__(self, dim, num_heads):
@@ -140,7 +143,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         Returns:
             tf.Tensor of shape (batch_size, self.num_heads, seq_length, self.depth)
         """
-        x = tf.reshape(x, (tf.shape(x)[0], tf.shape(x)[1], self.num_heads, self.depth))
+        x = tf.reshape(x, (tf.shape(x)[0], x.shape[1], self.num_heads, self.depth))
         return tf.transpose(x, perm=[0, 2, 1, 3])
 
     def call(self, x):
@@ -155,6 +158,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         att = tf.reshape(att, (tf.shape(att)[0], tf.shape(att)[1], -1)) # (batch_size, seq_length, dim)
         
         return att
+
 
 class EncoderBlock(tf.keras.Model):
     def __init__(self, dim, num_heads):
@@ -174,6 +178,7 @@ class EncoderBlock(tf.keras.Model):
         ff_output = self.norm_after_ff(mha_output + ff_output)
         
         return ff_output
+
 
 def build_transformer(vocab_size):
     inputs = tf.keras.Input(shape=(hparams["seq_length"],), dtype='int32')
@@ -196,6 +201,7 @@ def build_transformer(vocab_size):
     model = tf.keras.Model(inputs=inputs, outputs=x) # (batch_size, seq_length, vocab_size)
     
     return model
+
 
 def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power=1):
     """Generate a sequence of tokens starting from given starting string using the sampling method.
@@ -235,6 +241,7 @@ def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power
     text = [t+1 for t in text]
     return encoder.decode(text)
 
+
 def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     probas = []
     for X, y in tqdm(zip(X_test, y_test), total=len(X_test)):
@@ -248,6 +255,7 @@ def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     
     return perplexity
 
+
 def load_train_test_val_encoder(data=DATA, sample=2E-5, target_vocab_size=hparams["target_vocab_size"]):
     """Load and encode the data, then return train, test and validation data sets
 
@@ -258,7 +266,7 @@ def load_train_test_val_encoder(data=DATA, sample=2E-5, target_vocab_size=hparam
     Returns:
         train, test and validation data sets
     """
-    text = load_data(data, sample=sample)
+    text = load_data(data, sample=sample, split_on="\n")
     X, encoder = encode_data(text, tokens="subwords", target_vocab_size=target_vocab_size)
     train, test = train_test_split(X, test_size=0.1, shuffle=False)
     train, val  = train_test_split(train, test_size=0.3, shuffle=False)
@@ -266,8 +274,9 @@ def load_train_test_val_encoder(data=DATA, sample=2E-5, target_vocab_size=hparam
     # encoder.vocab_size returns 1 + len(self._subwords) + text_encoder.NUM_BYTES
     return train, test, val, encoder
 
+
 def main(log_training=True, comment=""):
-    train, test, val, encoder = load_train_test_val(data=DATA, sample=2E-5)
+    train, test, val, encoder = load_train_test_val_encoder(data=DATA, sample=2E-5)
     vocab_size = encoder.vocab_size - 1
     
     X_train, y_train = split_into_X_y(train, hparams["seq_length"], one_hot_encode_y=True, vocab_size=vocab_size)
