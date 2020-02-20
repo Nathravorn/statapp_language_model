@@ -28,25 +28,23 @@ def encode_data(text, tokens="subwords", target_vocab_size=1000):
     """Encode a text based on some tokenizing method.
     
     Args:
-        text (str): Text to encode.
+        text (list of strings): Text dataset to encode.
         tokens (str): Tokenization method. Currently supports "subwords" and "characters".
         target_vocab_size (int): Target vocabulary size for the encoder. Must be >= 1000.
     
     Returns:
-        list of ints: Encoded text.
-        encoder object: object supporting the "encode" and "decode" methods,
-            such as a tensorflow_datasets.features.text.SubwordTextEncoder.
+        list of lists of ints: Encoded text dataset. Each string in the dataset corresponds to a list of ints.
+        encoder object: A tensorflow_datasets.features.text.SubwordTextEncoder object.
     """
-    sentences = text.split('\n')
     if tokens=="subwords":
         encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-            (s for s in sentences),
+            (t for t in text),
             target_vocab_size=target_vocab_size
         )
     
     elif tokens=="characters":
         encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-            (s for s in sentences),
+            (t for t in text),
             target_vocab_size=target_vocab_size,
             max_subword_length=1,
         )
