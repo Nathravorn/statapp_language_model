@@ -24,14 +24,14 @@ DATA = "data/fr.train.top1M.txt"
 
 #Hyper Parameters
 hparams = {
-    "seq_length": 16,
-    "num_blocks": 4,
-    "d_model": 16,
-    "num_heads": 2,
+    "seq_length": 32,
+    "max_pos_encoding": 8192,
+    "num_blocks": 2,
+    "d_model": 64,
+    "num_heads": 4,
     "target_vocab_size": 1000,
-
-    #"epochs": 600,
-    "epochs": 1,
+    "epochs": 500,
+    # "epochs": 1,
     "batch_size": 32,
     "learning_rate": 1e-3,
 }
@@ -49,16 +49,16 @@ def scaled_dot_product_attention(q, k, v, mask=False):
     Returns:
         tf.Tensor of shape (..., seq_length, d_v)
     """
-    assert q.shape[-1] == k.shape[-1]
-    assert q.shape[-2] == k.shape[-2]
-    assert k.shape[-2] == v.shape[-2]
+    assert tf.shape(q)[-1] == tf.shape(k)[-1]
+    assert tf.shape(q)[-2] == tf.shape(k)[-2]
+    assert tf.shape(k)[-2] == tf.shape(v)[-2]
     
     if mask:
-        mask_matrix = generate_mask_matrix(q.shape[-2])
+        mask_matrix = generate_mask_matrix(tf.shape(q)[-2])
     else:
-        mask_matrix = tf.zeros((q.shape[-2], q.shape[-2]))
+        mask_matrix = tf.zeros((tf.shape(q)[-2], tf.shape(q)[-2]))
     
-    dimension = tf.cast(q.shape[-1], dtype=tf.float32)
+    dimension = tf.cast(tf.shape(q)[-1], dtype=tf.float32)
     
     scores = tf.matmul(q, k, transpose_b=True) # (..., seq_length, seq_length)
     scores = scores / tf.math.sqrt(dimension) # (..., seq_length, seq_length)
@@ -117,7 +117,12 @@ def generate_mask_matrix(seq_length):
     """Create a mask matrix to keep the model from attending to a token it must predict or to those that follow it.
     Simply an upper-triangular matrix filled with ones (with zeros on the diagonal).
     """
-    mask = 1 - tf.linalg.band_part(tf.ones((seq_length, seq_length)), -1, 0)
+    shape = (seq_length, seq_length)
+    mask = 1 - tf.linalg.band_part(
+        tf.ones(shape),
+        -1,
+        0
+    )
     return mask
 
 
@@ -145,7 +150,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         Returns:
             tf.Tensor of shape (batch_size, self.num_heads, seq_length, self.depth)
         """
-        x = tf.reshape(x, (tf.shape(x)[0], x.shape[1], self.num_heads, self.depth))
+        x = tf.reshape(x, (tf.shape(x)[0], tf.shape(x)[1], self.num_heads, self.depth))
         return tf.transpose(x, perm=[0, 2, 1, 3])
 
     def call(self, x):
@@ -181,38 +186,65 @@ class EncoderBlock(tf.keras.Model):
         
         return ff_output
 
+class Transformer(tf.keras.Model):
+    def __init__(self, d_model, num_blocks, num_heads, vocab_size, max_pos_encoding, **_):
+        super(Transformer, self).__init__(dynamic=True)
+        self.d_model = d_model
+        self.num_blocks = num_blocks
+        self.num_heads = num_heads
+        self.vocab_size = vocab_size
+        self.max_pos_encoding = max_pos_encoding
+
+        self.embedding = Embedding(self.vocab_size, self.d_model)
+        self.pos_encoding = tf.convert_to_tensor(
+            get_positional_encodings(self.max_pos_encoding, self.d_model),
+            dtype="float32",
+        )[tf.newaxis, ...]
+
+        self.blocks = [
+            EncoderBlock(dim=self.d_model, num_heads=self.num_heads)
+            for _ in range(self.num_blocks)
+        ]
+
+    def call(self, x):
+        x = self.embedding(x)
+        
+        # print("You are calling the TRANSFORMER service!", x)
+
+        x = tf.math.add(
+            x,
+            self.pos_encoding[:, :tf.shape(x)[1], :],
+            name="positional_encoding"
+        )
+
+        for block in self.blocks:
+            x = block(x)
+
+        x = (self.embedding.variables[0] @ x[..., None])[..., 0] # (batch_size, seq_length, vocab_size)
+
+        return x
 
 def multi_sparse_cross_entropy(y_true, y_pred):
     loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-        labels=y_true,
+        labels=tf.cast(tf.math.maximum(y_true - 1, 0), tf.int32),
         logits=y_pred,
     )
 
-    return tf.reduce_mean(loss, -1)
+    mask = tf.math.logical_not(tf.math.equal(y_true, 0))
+    
+    mask = tf.cast(mask, dtype=loss.dtype)
+    loss *= mask
+    
+    return tf.reduce_mean(loss, axis=-1)
 
 
 def build_transformer(vocab_size):
-    inputs = tf.keras.Input(shape=(hparams["seq_length"],), dtype='int32')
-    embedding = Embedding(vocab_size, hparams["d_model"])
-    embedded = embedding(inputs) # (batch_size, seq_length, d_model)
-    pos_encodings = tf.constant(get_positional_encodings(hparams["seq_length"], hparams["d_model"]), dtype=tf.float32)
-    encoded = tf.math.add(embedded, pos_encodings, name="positional_encoding")
     
-    x = encoded
-    for _ in range(hparams["num_blocks"]):
-        x = EncoderBlock(dim=hparams["d_model"], num_heads=hparams["num_heads"])(x)
+    model = Transformer(
+        vocab_size=vocab_size,
+        **hparams
+    )
 
-    x = TimeDistributed(Dense(hparams["d_model"]))(x)
-    
-    # Apply inverse embedding transform to get output of size vocab_size
-    x = (embedding.variables[0] @ x[..., None])[..., 0] # (batch_size, seq_length, vocab_size)
-    # x = (embedding.variables[0] @ x[..., None]) # (batch_size, seq_length, vocab_size)
-    
-    # softmax is unnecessary because computed in the loss
-    # x = tf.nn.softmax(x, name="softmax")
-    
-    model = tf.keras.Model(inputs=inputs, outputs=x)
-    
     return model
 
 
@@ -319,9 +351,13 @@ def main(log_training=True, comment=""):
     train, test, val, encoder = load_train_test_val_encoder(data=DATA, sample=1E-5)
     vocab_size = encoder.vocab_size - 1
     
-    X_train, y_train = split_into_X_y(train)#, hparams["seq_length"])
-    X_test, y_test = split_into_X_y(test)#, hparams["seq_length"])
-    X_val, y_val = split_into_X_y(val)#, hparams["seq_length"])
+    seq_length = min(
+        hparams["seq_length"],
+        max([max(len(t) for t in set_) for set_ in (train, test, val)])
+    )
+    X_train, y_train = split_into_X_y(train, seq_length)
+    X_test, y_test = split_into_X_y(test, seq_length)
+    X_val, y_val = split_into_X_y(val, seq_length)
     
     # Form model
     model = build_transformer(vocab_size=vocab_size)
@@ -334,9 +370,11 @@ def main(log_training=True, comment=""):
         # metrics=[tf.keras.metrics.CategoricalAccuracy()],
     )
     
+    # model.build(input_shape=(None, None, hparams["d_model"]))
+
     print("Non mais allô quoi... Ouvalument!")
     summary = []
-    model.summary(print_fn=lambda x: summary.append(x))
+    # model.summary(print_fn=lambda x: summary.append(x))
     summary = "\n".join(summary)
     print(summary)
 
@@ -347,14 +385,15 @@ def main(log_training=True, comment=""):
         batch_size=hparams["batch_size"],
         epochs=hparams["epochs"],
         validation_data=(X_val, y_val),
+        # use_multiprocessing=False,
     )
     
-    perp = calculate_perplexity(model, X_test, y_test)
+    # perp = calculate_perplexity(model, X_test, y_test)
     
     prompt = "Il y a bien longtemps , dans un pays lointain , "
-    generated_text = generate_sampled(model, encoder, hparams["seq_length"], 500, prompt, 1)
-    print("Texte généré")
-    print(generated_text)
+    # generated_text = generate_sampled(model, encoder, hparams["seq_length"], 500, prompt, 1)
+    # print("Texte généré")
+    # print(generated_text)
     
     log = {
         "hyperparameters": hparams,
@@ -362,11 +401,11 @@ def main(log_training=True, comment=""):
         "summary": summary,
         "sample": {
             "prompt": prompt,
-            "output": generated_text[len(prompt):],
+            # "output": generated_text[len(prompt):],
         },
-        "metrics": {
-            "perplexity": perp,
-        },
+        #"metrics": {
+        #    "perplexity": perp,
+        #},
         "data_size": {
             "train": len(X_train),
             "val": len(X_val),
@@ -380,4 +419,4 @@ def main(log_training=True, comment=""):
     
     pprint(log, compact=True)
     
-    return model, encoder, log
+    return model, encoder, log, X_train, y_train

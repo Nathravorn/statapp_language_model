@@ -74,10 +74,10 @@ def split_into_X_y(samples, seq_length=None):
     if seq_length is not None:
         samples = [
             sample[:seq_length]
-            + [0] * min(seq_length - len(sample), 0)
+            + [0] * max(seq_length - len(sample), 0)
             for sample in samples
         ]
-    
+
     # Split sequences into X and y
     X = [
         sample[:-1]
