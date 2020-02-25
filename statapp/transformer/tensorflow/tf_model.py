@@ -21,19 +21,21 @@ from statapp.common.utils import NumpyEncoder, add_to_log
 
 DATA = "data/fr.train.top1M.txt"
 
+
 #Hyper Parameters
 hparams = {
-    "seq_length": 32,
+    "seq_length": 16,
     "num_blocks": 4,
-    "d_model": 64,
-    "num_heads": 8,
+    "d_model": 16,
+    "num_heads": 2,
     "target_vocab_size": 1000,
 
     #"epochs": 600,
     "epochs": 1,
-    "batch_size": 256,
+    "batch_size": 32,
     "learning_rate": 1e-3,
 }
+
 
 def scaled_dot_product_attention(q, k, v, mask=False):
     """Perform scaled dot-product attention on input tensors.
@@ -180,6 +182,15 @@ class EncoderBlock(tf.keras.Model):
         return ff_output
 
 
+def multi_sparse_cross_entropy(y_true, y_pred):
+    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+        labels=y_true,
+        logits=y_pred,
+    )
+
+    return tf.reduce_mean(loss, -1)
+
+
 def build_transformer(vocab_size):
     inputs = tf.keras.Input(shape=(hparams["seq_length"],), dtype='int32')
     embedding = Embedding(vocab_size, hparams["d_model"])
@@ -194,11 +205,13 @@ def build_transformer(vocab_size):
     x = TimeDistributed(Dense(hparams["d_model"]))(x)
     
     # Apply inverse embedding transform to get output of size vocab_size
-    x = (embedding.variables[0] @ x[..., None])[..., 0]
-
-    x = tf.nn.softmax(x, name="softmax")
+    x = (embedding.variables[0] @ x[..., None])[..., 0] # (batch_size, seq_length, vocab_size)
+    # x = (embedding.variables[0] @ x[..., None]) # (batch_size, seq_length, vocab_size)
     
-    model = tf.keras.Model(inputs=inputs, outputs=x) # (batch_size, seq_length, vocab_size)
+    # softmax is unnecessary because computed in the loss
+    # x = tf.nn.softmax(x, name="softmax")
+    
+    model = tf.keras.Model(inputs=inputs, outputs=x)
     
     return model
 
@@ -242,6 +255,33 @@ def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power
     return encoder.decode(text)
 
 
+def predict_probas_with_transformer(model, prompt, seq_length=hparams["seq_length"], apply_softmax=True):
+    """Feed a prompt (sequence of ints representing tokens) into a transformer model and return its
+    vector of predicted probabilities for the next token.
+    
+    Args:
+        model (tf.keras.Model): Transformer model.
+        prompt (list of ints): Prompt to start the sentence. Can be left empty.
+            If higher than seq_length, only the last seq_length tokens are taken into account.
+        seq_length (int): Maximum sequence length to feed into the model.
+            Default: hparams["seq_length"]
+        apply_softmax (bool): Whether to apply a softmax function to the output of the transformer.
+            Set to False if a softmax is already applied in the model.
+            Default: True.
+    
+    Returns:
+        np.array: Vector of probabilities for the next token.
+    """
+    prompt = prompt[-seq_length:]
+    
+    probas = model.predict([prompt])[-1, :]
+    
+    if apply_softmax:
+        probas = tf.nn.softmax(probas)
+    
+    return probas
+
+
 def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     probas = []
     for X, y in tqdm(zip(X_test, y_test), total=len(X_test)):
@@ -276,7 +316,7 @@ def load_train_test_val_encoder(data=DATA, sample=2E-5, target_vocab_size=hparam
 
 
 def main(log_training=True, comment=""):
-    train, test, val, encoder = load_train_test_val_encoder(data=DATA, sample=2E-5)
+    train, test, val, encoder = load_train_test_val_encoder(data=DATA, sample=1E-5)
     vocab_size = encoder.vocab_size - 1
     
     X_train, y_train = split_into_X_y(train)#, hparams["seq_length"])
@@ -288,9 +328,10 @@ def main(log_training=True, comment=""):
     # from_logits: Whether y_pred is expected to be a logits tensor
     model.compile(
         # loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
-        loss=tf.keras.losses.CategoricalCrossentropy(),
+        # loss=tf.keras.losses.CategoricalCrossentropy(),
+        loss=multi_sparse_cross_entropy,
         optimizer=tf.keras.optimizers.Adam(hparams["learning_rate"]),
-        metrics=[tf.keras.metrics.CategoricalAccuracy()],
+        # metrics=[tf.keras.metrics.CategoricalAccuracy()],
     )
     
     print("Non mais allô quoi... Ouvalument!")
