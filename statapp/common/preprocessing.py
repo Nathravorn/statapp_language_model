@@ -49,7 +49,7 @@ def encode_data(text, tokens="subwords", target_vocab_size=1000):
             max_subword_length=1,
         )
     
-    encoded = encoder.encode(text)
+    encoded = [encoder.encode(t) for t in text]
     return encoded, encoder
 
 
