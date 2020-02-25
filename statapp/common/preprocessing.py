@@ -38,18 +38,18 @@ def encode_data(text, tokens="subwords", target_vocab_size=1000):
     """
     if tokens=="subwords":
         encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-            (t for t in text),
+            text,
             target_vocab_size=target_vocab_size
         )
     
     elif tokens=="characters":
         encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-            (t for t in text),
+            text,
             target_vocab_size=target_vocab_size,
             max_subword_length=1,
         )
     
-    encoded = encoder.encode(text)
+    encoded = [encoder.encode(t) for t in text]
     return encoded, encoder
 
 
