@@ -11,13 +11,13 @@ from common import get_positional_encodings
 
 # Hyperparamètres
 
-nb_decoders = 3
-vector_size = 100
-nb_heads = 2
+nb_decoders = 1
+vector_size = 30
+nb_heads = 1
 head_size = vector_size//nb_heads
-max_length = 5
+max_length = 8
+ffn_hidden_size = 120 #vector_size*4 pour gpt-2
 vocab_size = 1000
-ffn_hidden_size = 400 #vector_size*4 pour gpt-2
 
 
 class Transformer(nn.Module):
