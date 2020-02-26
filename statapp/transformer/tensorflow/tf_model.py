@@ -25,12 +25,12 @@ DATA = "data/fr.train.top1M.txt"
 #Hyper Parameters
 hparams = {
     "seq_length": 32,
-    "max_pos_encoding": 8192,
-    "num_blocks": 2,
-    "d_model": 64,
-    "num_heads": 4,
-    "target_vocab_size": 1000,
-    "epochs": 500,
+    "max_pos_encoding": 64,
+    "num_blocks": 1,
+    "d_model": 256,
+    "num_heads": 8,
+    "target_vocab_size": 258,
+    "epochs": 1000,
     # "epochs": 1,
     "batch_size": 32,
     "learning_rate": 1e-3,
@@ -49,9 +49,9 @@ def scaled_dot_product_attention(q, k, v, mask=False):
     Returns:
         tf.Tensor of shape (..., seq_length, d_v)
     """
-    assert tf.shape(q)[-1] == tf.shape(k)[-1]
-    assert tf.shape(q)[-2] == tf.shape(k)[-2]
-    assert tf.shape(k)[-2] == tf.shape(v)[-2]
+    assert q.shape[-1] == k.shape[-1]
+    assert q.shape[-2] == k.shape[-2]
+    assert k.shape[-2] == v.shape[-2]
     
     if mask:
         mask_matrix = generate_mask_matrix(tf.shape(q)[-2])
@@ -225,10 +225,12 @@ class Transformer(tf.keras.Model):
         return x
 
 def multi_sparse_cross_entropy(y_true, y_pred):
-    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-        labels=tf.cast(tf.math.maximum(y_true - 1, 0), tf.int32),
-        logits=y_pred,
-    )
+    #loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+    #    labels=tf.cast(tf.math.maximum(y_true[..., 0] - 1, 0), tf.int32),
+    #    logits=y_pred,
+    #)
+    loss = tf.keras.losses.SparseCategoricalCrossentropy(
+                from_logits=True, reduction='none')(y_true , y_pred)
 
     mask = tf.math.logical_not(tf.math.equal(y_true, 0))
     
@@ -239,13 +241,44 @@ def multi_sparse_cross_entropy(y_true, y_pred):
 
 
 def build_transformer(vocab_size):
-    
-    model = Transformer(
-        vocab_size=vocab_size,
-        **hparams
-    )
+    inputs = tf.keras.Input(shape=(hparams["seq_length"],), dtype='int32')
+    embedding = Embedding(vocab_size, hparams["d_model"])
+    x = embedding(inputs) # (batch_size, seq_length, d_model)
 
-    return model
+    pos_encodings = tf.constant(get_positional_encodings(hparams["seq_length"], hparams["d_model"]), dtype=tf.float32)
+
+    x = tf.math.add(
+        x,
+        pos_encodings,
+        name="positional_encoding"
+    )
+    
+    for _ in range(hparams["num_blocks"]):
+        x = EncoderBlock(dim=hparams["d_model"], num_heads=hparams["num_heads"])(x)
+    #model = Transformer(
+    #    vocab_size=vocab_size,
+    #    **hparams
+    #)
+
+    # x = TimeDistributed(Dense(hparams["d_model"]))(x)
+
+    # Apply inverse embedding transform to get output of size vocab_size
+    
+    x = (x @ tf.transpose(embedding.variables[0])) # (batch_size, seq_length, vocab_size)
+
+    # x = (embedding.variables[0] @ x[..., None]) # (batch_size, seq_length, vocab_size)
+
+    # softmax is unnecessary because computed in the loss
+    # x = tf.nn.softmax(x, name="softmax")
+
+    model = tf.keras.Model(inputs=inputs, outputs=x)
+
+    return model 
+    #model = Transformer(
+    #    vocab_size=vocab_size,
+    #    **hparams
+    #)
+    #return model
 
 
 def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power=1):
@@ -341,7 +374,7 @@ def load_train_test_val_encoder(data=DATA, sample=2E-5, target_vocab_size=hparam
     text = load_data(data, sample=sample, split_on="\n")
     X, encoder = encode_data(text, tokens="subwords", target_vocab_size=target_vocab_size)
     train, test = train_test_split(X, test_size=0.1, shuffle=False)
-    train, val  = train_test_split(train, test_size=0.3, shuffle=False)
+    train, val = train_test_split(train, test_size=0.3, shuffle=False)
     # see : tensorflow_datasets/core/features/text/subword_text_encoder.py
     # encoder.vocab_size returns 1 + len(self._subwords) + text_encoder.NUM_BYTES
     return train, test, val, encoder
@@ -351,14 +384,23 @@ def main(log_training=True, comment=""):
     train, test, val, encoder = load_train_test_val_encoder(data=DATA, sample=1E-5)
     vocab_size = encoder.vocab_size - 1
     
-    seq_length = min(
-        hparams["seq_length"],
-        max([max(len(t) for t in set_) for set_ in (train, test, val)])
-    )
+    # seq_length = min(
+    #    hparams["seq_length"],
+    #    max([max(len(t) for t in set_) for set_ in (train, test, val)])
+    #)
+    seq_length = hparams["seq_length"]
     X_train, y_train = split_into_X_y(train, seq_length)
     X_test, y_test = split_into_X_y(test, seq_length)
     X_val, y_val = split_into_X_y(val, seq_length)
-    
+   
+    #X_train = np.array(X_train)
+    #X_test = np.array(X_test)
+    #X_val = np.array(X_val)
+
+    #y_train = np.array(y_train)[..., np.newaxis]
+    #y_test = np.array(y_test)[..., np.newaxis]
+    #y_val = np.array(y_val)[..., np.newaxis]
+
     # Form model
     model = build_transformer(vocab_size=vocab_size)
     # from_logits: Whether y_pred is expected to be a logits tensor

@@ -73,8 +73,8 @@ def split_into_X_y(samples, seq_length=None):
     # Preprocess sequences, padding or cutting
     if seq_length is not None:
         samples = [
-            sample[:seq_length]
-            + [0] * max(seq_length - len(sample), 0)
+            sample[:seq_length + 1]
+            + [0] * max(seq_length + 1 - len(sample), 0)
             for sample in samples
         ]
 
