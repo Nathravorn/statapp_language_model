@@ -28,6 +28,7 @@ hparams = {
     "max_pos_encoding": 64,
     "num_blocks": 1,
     "d_model": 256,
+    "ff_hidden_size": 256,
     "num_heads": 8,
     "target_vocab_size": 258,
     "epochs": 1000,
@@ -168,11 +169,12 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
 
 class EncoderBlock(tf.keras.Model):
-    def __init__(self, dim, num_heads):
+    def __init__(self, dim, ff_hidden_size, num_heads):
         super(EncoderBlock, self).__init__()
         self.dim = dim
         self.mha = MultiHeadAttention(dim, num_heads)
-        self.ff = Dense(dim, activation="relu")
+        self.ff1 = Dense(ff_hidden_size, activation="relu")
+        self.ff2 = Dense(dim, activation="relu")
         
         self.norm_after_mha = LayerNormalization()
         self.norm_after_ff = LayerNormalization()
@@ -181,15 +183,16 @@ class EncoderBlock(tf.keras.Model):
         mha_output = self.mha(x)
         mha_output = self.norm_after_mha(x + mha_output)
         
-        ff_output = self.ff(mha_output)
+        ff_output = self.ff2(self.ff1(mha_output))
         ff_output = self.norm_after_ff(mha_output + ff_output)
         
         return ff_output
 
 class Transformer(tf.keras.Model):
-    def __init__(self, d_model, num_blocks, num_heads, vocab_size, max_pos_encoding, **_):
+    def __init__(self, d_model, ff_hidden_size, num_blocks, num_heads, vocab_size, max_pos_encoding, **_):
         super(Transformer, self).__init__(dynamic=True)
         self.d_model = d_model
+        self.ff_hidden_size = ff_hidden_size
         self.num_blocks = num_blocks
         self.num_heads = num_heads
         self.vocab_size = vocab_size
@@ -202,7 +205,7 @@ class Transformer(tf.keras.Model):
         )[tf.newaxis, ...]
 
         self.blocks = [
-            EncoderBlock(dim=self.d_model, num_heads=self.num_heads)
+            EncoderBlock(dim=self.d_model, hidden_size=self.ff_hidden_size, num_heads=self.num_heads)
             for _ in range(self.num_blocks)
         ]
 
@@ -254,7 +257,7 @@ def build_transformer(vocab_size):
     )
     
     for _ in range(hparams["num_blocks"]):
-        x = EncoderBlock(dim=hparams["d_model"], num_heads=hparams["num_heads"])(x)
+        x = EncoderBlock(dim=hparams["d_model"], ff_hidden_size=hparams["ff_hidden_size"], num_heads=hparams["num_heads"])(x)
     #model = Transformer(
     #    vocab_size=vocab_size,
     #    **hparams
