@@ -2,6 +2,25 @@ import numpy as np
 import tensorflow_datasets as tfds
 
 
+def load_all_data(path, sample=1):
+    """Load a text dataset and split it, optionally sampling the data.
+    
+    Args:
+        path (str): Path to a text file.
+        sample (float): (approximate) Proportion of the dataset to load. 1 loads everything.
+            Default: 1.
+    
+    Returns:
+        string: All dataset.
+    """
+    with open(path, "r", encoding="utf-8") as file:
+        text = file.read()
+    
+    if sample != 1:
+        text = text[:int(len(text)*sample)]
+   
+    return text
+
 def load_data(path, sample=1, split_on="\n"):
     """Load a text dataset and split it, optionally sampling the data.
     
