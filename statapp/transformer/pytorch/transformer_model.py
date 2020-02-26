@@ -11,12 +11,12 @@ from common import get_positional_encodings
 
 # Hyperparamètres
 
-nb_decoders = 1
-vector_size = 30
-nb_heads = 1
+nb_decoders = 2
+vector_size = 64
+nb_heads = 8
 head_size = vector_size//nb_heads
 max_length = 8
-ffn_hidden_size = 120 #vector_size*4 pour gpt-2
+ffn_hidden_size = 256 #vector_size*4 pour gpt-2
 vocab_size = 1000
 
 
