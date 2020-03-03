@@ -17,7 +17,7 @@ from tensorflow.keras.layers import Dense, Embedding, LayerNormalization, TimeDi
 import statapp
 from statapp.transformer.common import get_positional_encodings
 from statapp.common.preprocessing import load_data, encode_data, split_into_X_y
-from statapp.common.utils import NumpyEncoder, add_to_log
+from statapp.common.utils import NumpyEncoder, add_to_log, pad_or_cut
 
 DATA_PATH = "data/fr.train.top1M.txt"
 
@@ -27,11 +27,11 @@ hparams = {
     "seq_length": 32,
     "max_pos_encoding": 64,
     "num_blocks": 1,
-    "d_model": 256,
-    "ff_hidden_size": 256,
+    "d_model": 512,
+    "ff_hidden_size": 512,
     "num_heads": 8,
     "target_vocab_size": 258,
-    "epochs": 1000,
+    "epochs": 2000,
     # "epochs": 1,
     "batch_size": 32,
     "learning_rate": 1e-3,
@@ -265,12 +265,8 @@ def build_transformer(vocab_size):
     #    **hparams
     #)
 
-    # x = TimeDistributed(Dense(hparams["d_model"]))(x)
-
     # Apply inverse embedding transform to get output of size vocab_size
-    
     x = (x @ tf.transpose(embedding.variables[0])) # (batch_size, seq_length, vocab_size)
-
     # x = (embedding.variables[0] @ x[..., None]) # (batch_size, seq_length, vocab_size)
 
     # softmax is unnecessary because computed in the loss
@@ -320,6 +316,11 @@ def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power
     return encoder.decode(text)
 
 
+def get_max_model_outputs(model, prompt, seq_length=hparams["seq_length"]):
+    prompt = np.array(pad_or_cut(prompt, seq_length)).reshape(1, -1)
+    return np.argmax(model.predict(prompt), -1).flatten()
+    
+
 def predict_probas_with_transformer(model, prompt, seq_length=hparams["seq_length"], apply_softmax=True):
     """Feed a prompt (sequence of ints representing tokens) into a transformer model and return its
     vector of predicted probabilities for the next token.
@@ -328,7 +329,7 @@ def predict_probas_with_transformer(model, prompt, seq_length=hparams["seq_lengt
         model (tf.keras.Model): Transformer model.
         prompt (list of ints): Prompt to start the sentence. Can be left empty.
             If higher than seq_length, only the last seq_length tokens are taken into account.
-        seq_length (int): Maximum sequence length to feed into the model.
+        seq_length (int): Sequence length to pad or cut to before feeding into the model.
             Default: hparams["seq_length"]
         apply_softmax (bool): Whether to apply a softmax function to the output of the transformer.
             Set to False if a softmax is already applied in the model.
@@ -337,9 +338,10 @@ def predict_probas_with_transformer(model, prompt, seq_length=hparams["seq_lengt
     Returns:
         np.array: Vector of probabilities for the next token.
     """
-    prompt = prompt[-seq_length:]
+    prompt_length = max(len(prompt), seq_length)
+    prompt = np.array(pad_or_cut(prompt, seq_length)).reshape(1, -1)
     
-    probas = model.predict([prompt])[-1, :]
+    probas = model.predict(prompt)[0, prompt_length-1, :]
     
     if apply_softmax:
         probas = tf.nn.softmax(probas)
@@ -416,7 +418,7 @@ def main(log_training=True, comment=""):
 
     print("Non mais allô quoi... Ouvalument!")
     summary = []
-    # model.summary(print_fn=lambda x: summary.append(x))
+    model.summary(print_fn=lambda x: summary.append(x))
     summary = "\n".join(summary)
     print(summary)
 
@@ -459,6 +461,6 @@ def main(log_training=True, comment=""):
     if log_training:
         add_to_log(log)
     
-    pprint(log, compact=True)
+    # pprint(log, compact=True)
     
     return model, encoder, log, X_train, y_train
