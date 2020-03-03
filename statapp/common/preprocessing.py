@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow_datasets as tfds
+from statapp.common.utils import pad_or_cut
 
 
 def load_all_data(path, sample=1):
@@ -20,6 +21,7 @@ def load_all_data(path, sample=1):
         text = text[:int(len(text)*sample)]
    
     return text
+
 
 def load_data(path, sample=1, split_on="\n"):
     """Load a text dataset and split it, optionally sampling the data.
@@ -92,8 +94,7 @@ def split_into_X_y(samples, seq_length=None):
     # Preprocess sequences, padding or cutting
     if seq_length is not None:
         samples = [
-            sample[:seq_length + 1]
-            + [0] * max(seq_length + 1 - len(sample), 0)
+            pad_or_cut(sample, seq_length + 1)
             for sample in samples
         ]
 

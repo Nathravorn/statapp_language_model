@@ -19,6 +19,7 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
+
 def add_to_log(entry, path=None, auto_add=["id", "date"]):
     """Add to the training log file the specified entry.
     By default, adds a few automatically generated fields to the entry.
@@ -56,3 +57,27 @@ def add_to_log(entry, path=None, auto_add=["id", "date"]):
     with open(path, "w") as file:
         json.dump(log, file, indent=4, sort_keys=True, cls=NumpyEncoder)
 
+
+def pad_or_cut(seq, seq_length, padder=[0]):
+    """Pad or cut a sequence to the specified length.
+    Typically used for lists or strings.
+    
+    Args:
+        seq (iterable): Sequence to pad (if too short) or cut (if too long).
+        seq_length (int): Length to pad or cut the sequence to.
+        padder: Object to use for padding.
+            Must support addition with original sequence and multiplication by an int.
+            Default: [0]
+    
+    Returns:
+        iterable: padded or cut sequence of length seq_length.
+    
+    Examples:
+        >>> pad_or_cut([1, 2, 3], 4, [0])
+        [1, 2, 3, 0]
+        >>> pad_or_cut([1, 2, 3], 2, [0])
+        [1, 2]
+        >>> pad_or_cut("abc", 5, ".")
+        "abc.."
+    """
+    return seq[:seq_length] + padder * max(seq_length - len(seq), 0)
