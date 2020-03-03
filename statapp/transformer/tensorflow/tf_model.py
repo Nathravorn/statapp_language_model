@@ -19,7 +19,7 @@ from statapp.transformer.common import get_positional_encodings
 from statapp.common.preprocessing import load_data, encode_data, split_into_X_y
 from statapp.common.utils import NumpyEncoder, add_to_log
 
-DATA = "data/fr.train.top1M.txt"
+DATA_PATH = "data/fr.train.top1M.txt"
 
 
 #Hyper Parameters
@@ -188,6 +188,7 @@ class EncoderBlock(tf.keras.Model):
         
         return ff_output
 
+
 class Transformer(tf.keras.Model):
     def __init__(self, d_model, ff_hidden_size, num_blocks, num_heads, vocab_size, max_pos_encoding, **_):
         super(Transformer, self).__init__(dynamic=True)
@@ -226,6 +227,7 @@ class Transformer(tf.keras.Model):
         x = (self.embedding.variables[0] @ x[..., None])[..., 0] # (batch_size, seq_length, vocab_size)
 
         return x
+
 
 def multi_sparse_cross_entropy(y_true, y_pred):
     #loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -276,12 +278,7 @@ def build_transformer(vocab_size):
 
     model = tf.keras.Model(inputs=inputs, outputs=x)
 
-    return model 
-    #model = Transformer(
-    #    vocab_size=vocab_size,
-    #    **hparams
-    #)
-    #return model
+    return model
 
 
 def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power=1):
@@ -364,7 +361,7 @@ def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     return perplexity
 
 
-def load_train_test_val_encoder(data=DATA, sample=2E-5, target_vocab_size=hparams["target_vocab_size"]):
+def load_train_test_val_encoder(data=DATA_PATH, sample=2E-5, target_vocab_size=hparams["target_vocab_size"]):
     """Load and encode the data, then return train, test and validation data sets
 
     Args:
@@ -384,7 +381,7 @@ def load_train_test_val_encoder(data=DATA, sample=2E-5, target_vocab_size=hparam
 
 
 def main(log_training=True, comment=""):
-    train, test, val, encoder = load_train_test_val_encoder(data=DATA, sample=1E-5)
+    train, test, val, encoder = load_train_test_val_encoder(data=DATA_PATH, sample=1E-5)
     vocab_size = encoder.vocab_size - 1
     
     # seq_length = min(
