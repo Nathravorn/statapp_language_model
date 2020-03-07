@@ -13,7 +13,7 @@ from common import get_positional_encodings
 
 nb_decoders = 2
 vector_size = 64
-nb_heads = 8
+nb_heads = 4
 head_size = vector_size//nb_heads
 max_length = 8
 ffn_hidden_size = 256 #vector_size*4 pour gpt-2
