@@ -132,3 +132,6 @@ class MultiHeadAttention(nn.Module):
 
         return a
     
+def buildTransformer(vector_size, nb_decoders, nb_heads, head_size, ffn_hidden_size, vocab_size):
+    LMtransformer = Transformer(vector_size, vocab_size, nb_decoders, Decoder(vector_size, MultiHeadAttention(vector_size, nb_heads, head_size), FeedforwardNetwork(vector_size, ffn_hidden_size)))
+    return LMtransformer
