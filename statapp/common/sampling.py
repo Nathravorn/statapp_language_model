@@ -77,7 +77,7 @@ def sample_token_sequence(predictor, sequence, gen_length=100, **kwargs):
 
     Args:
         predictor (function): Must take as input a sequence of tokens and return
-            a sequence of scores of length encoder.vocab_size.
+            a sequence of scores of length vocab_size.
             The scores are normalized and interpreted as probabilities.
         sequence (list of ints): Initial sequence to pass to the predictor.
         gen_length (int): How many tokens to generate.

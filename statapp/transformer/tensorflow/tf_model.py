@@ -245,34 +245,45 @@ def multi_sparse_cross_entropy(y_true, y_pred):
     return tf.reduce_mean(loss, axis=-1)
 
 
-def build_transformer(vocab_size):
-    inputs = tf.keras.Input(shape=(hparams["seq_length"],), dtype='int32')
-    embedding = Embedding(vocab_size, hparams["d_model"])
-    x = embedding(inputs) # (batch_size, seq_length, d_model)
-
-    pos_encodings = tf.constant(get_positional_encodings(hparams["seq_length"], hparams["d_model"]), dtype=tf.float32)
-
-    x = tf.math.add(
-        x,
-        pos_encodings,
-        name="positional_encoding"
-    )
+def build_transformer(vocab_size, use_subclassing=True):
+    if use_subclassing:
+        model = Transformer(
+           vocab_size=vocab_size,
+           **hparams
+        )
     
-    for _ in range(hparams["num_blocks"]):
-        x = EncoderBlock(dim=hparams["d_model"], ff_hidden_size=hparams["ff_hidden_size"], num_heads=hparams["num_heads"])(x)
-    #model = Transformer(
-    #    vocab_size=vocab_size,
-    #    **hparams
-    #)
+    else:
+        inputs = tf.keras.Input(shape=(hparams["seq_length"],), dtype='int32')
+        embedding = Embedding(vocab_size, hparams["d_model"])
+        x = embedding(inputs) # (batch_size, seq_length, d_model)
 
+<<<<<<< Updated upstream
     # Apply inverse embedding transform to get output of size vocab_size
     x = (x @ tf.transpose(embedding.variables[0])) # (batch_size, seq_length, vocab_size)
     # x = (embedding.variables[0] @ x[..., None]) # (batch_size, seq_length, vocab_size)
+=======
+        pos_encodings = tf.constant(get_positional_encodings(hparams["seq_length"], hparams["d_model"]), dtype=tf.float32)
 
-    # softmax is unnecessary because computed in the loss
-    # x = tf.nn.softmax(x, name="softmax")
+        x = tf.math.add(
+            x,
+            pos_encodings,
+            name="positional_encoding"
+        )
+        
+        for _ in range(hparams["num_blocks"]):
+            x = EncoderBlock(dim=hparams["d_model"], ff_hidden_size=hparams["ff_hidden_size"], num_heads=hparams["num_heads"])(x)
 
-    model = tf.keras.Model(inputs=inputs, outputs=x)
+        # x = TimeDistributed(Dense(hparams["d_model"]))(x)
+
+        # Apply inverse embedding transform to get output of size vocab_size
+        x = (x @ tf.transpose(embedding.variables[0])) # (batch_size, seq_length, vocab_size)
+        # x = (embedding.variables[0] @ x[..., None]) # (batch_size, seq_length, vocab_size)
+>>>>>>> Stashed changes
+
+        # softmax is unnecessary because computed in the loss
+        # x = tf.nn.softmax(x, name="softmax")
+
+        model = tf.keras.Model(inputs=inputs, outputs=x)
 
     return model
 
