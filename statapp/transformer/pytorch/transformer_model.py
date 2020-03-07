@@ -22,10 +22,11 @@ vocab_size = 1000
 
 class Transformer(nn.Module):
     "Whole transformer structure composed of stacked decoder blocks"
-    def __init__(self, vocab_size, decoder):
+    def __init__(self, vocab_size, nb_decoders, decoder):
         #Intégrer nb_decoders comme input
         super(Transformer, self).__init__()
-        self.decoders = nn.ModuleList([decoder for i in range(nb_decoders)])
+        self.nb_decoders = nb_decoders
+        self.decoders = nn.ModuleList([decoder for i in range(self.nb_decoders)])
         self.vocab_size = vocab_size
         self.embedding = nn.Embedding(self.vocab_size, vector_size)
         self.finalfc = nn.Linear(vector_size, self.vocab_size)
