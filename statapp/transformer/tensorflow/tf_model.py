@@ -17,12 +17,24 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 # this_file_dir = os.path.dirname(__file__)
 # sys.path.append(os.path.dirname(this_file_dir))
 import statapp
-from statapp.transformer.tensorflow import hparams, data_path
 from statapp.transformer.common import get_positional_encodings
 from statapp.transformer.tensorflow.sampling import generate_sample_with_transformer, predict_probas_with_transformer, get_max_model_outputs
 from statapp.common.preprocessing import load_data, encode_data, split_into_X_y
 from statapp.common.utils import NumpyEncoder, add_to_log, pad_or_cut
 
+data_path = "data/fr.train.top1M.txt"
+
+hparams = {
+    "max_seq_length": 1024,
+    "num_blocks": 1,
+    "d_model": 64,
+    "ff_hidden_size": 64,
+    "num_heads": 8,
+    "target_vocab_size": 258,
+    "epochs": 50,
+    "batch_size": 512,
+    "learning_rate": 1e-2,
+}
 
 def scaled_dot_product_attention(q, k, v, mask=False):
     """Perform scaled dot-product attention on input tensors.
@@ -61,7 +73,11 @@ def test_sdpa():
     """Test the scaled dot-product attention function.
     
     Returns:
-        tf.Tensor of value [[550.    5.5]]
+        tf.Tensor of value:
+            [[  1. ,   0. ],
+             [  5.5,   0. ],
+             [100. ,   5. ],
+             [550. ,   5.5]]
     """
     np.set_printoptions(suppress=True)
 
@@ -263,12 +279,12 @@ def load_train_test_val_encoder(data=data_path, sample=2E-5, target_vocab_size=h
 
 
 def main(log_training=True, comment=""):
-    train, test, val, encoder = load_train_test_val_encoder(data=data_path, sample=1E-3)
+    train, test, val, encoder = load_train_test_val_encoder(data=data_path, sample=1E-2)
     vocab_size = encoder.vocab_size - 1
     
-    X_train, y_train = split_into_X_y(train, 32)
-    X_test, y_test = split_into_X_y(test, 32)
-    X_val, y_val = split_into_X_y(val, 32)
+    X_train, y_train = split_into_X_y(train, 128)
+    X_test, y_test = split_into_X_y(test, 128)
+    X_val, y_val = split_into_X_y(val, 128)
    
     # Form model
     model = Transformer(
@@ -308,7 +324,6 @@ def main(log_training=True, comment=""):
     log = {
         "hyperparameters": hparams,
         "history": history.history,
-        "summary": summary,
         "sample": {
             "prompt": prompt,
             "output": generated_text,
