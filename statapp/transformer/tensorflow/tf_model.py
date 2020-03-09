@@ -18,15 +18,29 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 # sys.path.append(os.path.dirname(this_file_dir))
 import statapp
 from statapp.transformer.common import get_positional_encodings
+from statapp.transformer.tensorflow.sampling import generate_sample_with_transformer, predict_probas_with_transformer, get_max_model_outputs
 from statapp.common.preprocessing import load_data, encode_data, split_into_X_y
 from statapp.common.utils import NumpyEncoder, add_to_log, pad_or_cut
 
 DATA_PATH = "data/fr.train.top1M.txt"
 
+"""Hyperparameters:
+    "max_seq_length": Maximum sequence length to feed into model.
+        Used as maximum positional encoding inside the model.
+    "num_blocks": Number of Encoder blocks in the model.
+    "d_model": Dimension of the model.
+    "ff_hidden_size": Size of the hidden layer inside the Feed-Forward layer of the Encoder block.
+    "num_heads": Number of attention heads.
+    "target_vocab_size": Desired vocab size. Passed to the SubwordTextEncoder constructor.
+    "epochs": Number of epochs to train.
+    "batch_size": Size of each batch during training.
+    "learning_rate": Learning rate for the optimizer.
+"""
+
 
 #Hyper Parameters
 hparams = {
-    "max_pos_encoding": 1024,
+    "max_seq_length": 1024,
     "num_blocks": 1,
     "d_model": 64,
     "ff_hidden_size": 64,
@@ -190,18 +204,18 @@ class EncoderBlock(tf.keras.Model):
 
 
 class Transformer(tf.keras.Model):
-    def __init__(self, d_model, ff_hidden_size, num_blocks, num_heads, vocab_size, max_pos_encoding, **_):
+    def __init__(self, d_model, ff_hidden_size, num_blocks, num_heads, vocab_size, max_seq_length, **_):
         super(Transformer, self).__init__(dynamic=True)
         self.d_model = d_model
         self.ff_hidden_size = ff_hidden_size
         self.num_blocks = num_blocks
         self.num_heads = num_heads
         self.vocab_size = vocab_size
-        self.max_pos_encoding = max_pos_encoding
+        self.max_seq_length = max_seq_length
 
         self.embedding = Embedding(self.vocab_size, self.d_model)
         self.pos_encoding = tf.convert_to_tensor(
-            get_positional_encodings(self.max_pos_encoding, self.d_model),
+            get_positional_encodings(self.max_seq_length, self.d_model),
             dtype="float32",
         )[tf.newaxis, ...]
 
@@ -243,79 +257,6 @@ def multi_sparse_cross_entropy(y_true, y_pred):
     return tf.reduce_mean(loss, axis=-1)
 
 
-
-def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power=1):
-    """Generate a sequence of tokens starting from given starting string using the sampling method.
-    
-    Args:
-        nb_tokens_to_gen (int): Number of tokens to generate past the starting sequence.
-        prompt (str): String to start from.
-        power (float): Power to raise probabilities at before sampling.
-            A higher power means a less risky sampling.
-            An infinite power would be equivalent to greedy sampling.
-    
-    Returns:
-        tuple of strings: Generated tokens.
-    """
-
-    print("Generating sampled...")
-
-    text = encoder.encode(prompt)
-    text = [ t-1 for t in text]
-
-    assert len(text) >= seq_length, "Text encoded is {} length, which is less than {}".format(len(text), seq_length)
-    
-    for i in tqdm(range(nb_tokens_to_gen)):
-        probas = model.predict(
-            np.array(text[-seq_length:])
-            .reshape(1, seq_length)
-        )[0]
-        probas = probas**power
-        probas = probas / probas.sum()
-        # 0 is excluded, reserved for padding
-        # otherwise, it throws an error
-        # See : https://github.com/tensorflow/datasets/issues/702
-        # Line 217-218 in tensorflow_datasets/core/features/text/subword_text_encoder.py
-        next = np.random.choice(np.arange(len(probas)), p=probas)
-        text.append(next)
-
-    text = [t+1 for t in text]
-    return encoder.decode(text)
-
-
-def get_max_model_outputs(model, prompt, seq_length=hparams["seq_length"]):
-    prompt = np.array(pad_or_cut(prompt, seq_length)).reshape(1, -1)
-    return np.argmax(model.predict(prompt), -1).flatten()
-    
-
-def predict_probas_with_transformer(model, prompt, seq_length=hparams["seq_length"], apply_softmax=True):
-    """Feed a prompt (sequence of ints representing tokens) into a transformer model and return its
-    vector of predicted probabilities for the next token.
-    
-    Args:
-        model (tf.keras.Model): Transformer model.
-        prompt (list of ints): Prompt to start the sentence. Can be left empty.
-            If higher than seq_length, only the last seq_length tokens are taken into account.
-        seq_length (int): Sequence length to pad or cut to before feeding into the model.
-            Default: hparams["seq_length"]
-        apply_softmax (bool): Whether to apply a softmax function to the output of the transformer.
-            Set to False if a softmax is already applied in the model.
-            Default: True.
-    
-    Returns:
-        np.array: Vector of probabilities for the next token.
-    """
-    prompt_length = max(len(prompt), seq_length)
-    prompt = np.array(pad_or_cut(prompt, seq_length)).reshape(1, -1)
-    
-    probas = model.predict(prompt)[0, prompt_length-1, :]
-    
-    if apply_softmax:
-        probas = tf.nn.softmax(probas)
-    
-    return probas
-
-
 def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     probas = []
     for X, y in tqdm(zip(X_test, y_test), total=len(X_test)):
@@ -353,16 +294,16 @@ def main(log_training=True, comment=""):
     train, test, val, encoder = load_train_test_val_encoder(data=DATA_PATH, sample=1E-3)
     vocab_size = encoder.vocab_size - 1
     
-    X_train, y_train = split_into_X_y(train)
-    X_test, y_test = split_into_X_y(test)
-    X_val, y_val = split_into_X_y(val)
+    X_train, y_train = split_into_X_y(train, 32)
+    X_test, y_test = split_into_X_y(test, 32)
+    X_val, y_val = split_into_X_y(val, 32)
    
     # Form model
-
     model = Transformer(
        vocab_size=vocab_size,
        **hparams
     )
+    
     model.compile(
         loss=multi_sparse_cross_entropy,
         optimizer=tf.keras.optimizers.Adam(hparams["learning_rate"]),
@@ -370,11 +311,7 @@ def main(log_training=True, comment=""):
     )
     
     print("Non mais allô quoi... Ouvalument!")
-    summary = []
-    # model.summary(print_fn=lambda x: summary.append(x))
-    summary = "\n".join(summary)
-    print(summary)
-
+    
     history = model.fit(
         X_train,
         y_train,
@@ -392,7 +329,7 @@ def main(log_training=True, comment=""):
     # perp = calculate_perplexity(model, X_test, y_test)
     
     prompt = "Il y a bien longtemps , dans un pays lointain , "
-    # generated_text = generate_sampled(model, encoder, hparams["seq_length"], 500, prompt, 1)
+    generated_text = generate_sample_with_transformer(model, prompt, encoder, 500)
     # print("Texte généré")
     # print(generated_text)
     

@@ -109,7 +109,6 @@ def sample_string_sequence(predictor, sequence, encoder, gen_length=100, **kwarg
         encoder (encoder object): Object with methods .encode() and .decode().
             .encode() must take in a string and output a corresponding sequence of tokens.
             .decode() must take in a sequence of tokens and output a corresponding string.
-            Default: None.
         gen_length (int): How many tokens to generate.
             Default: 100.
         **kwargs: Keyword-arguments to be passed to the sample_from_distribution function. See its docstring for details.
