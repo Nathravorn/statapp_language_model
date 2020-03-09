@@ -1,6 +1,8 @@
 import numpy as np
 from tqdm import tqdm
 
+import tensorflow as tf
+from statapp.common.sampling import sample_string_sequence
 from statapp.transformer.tensorflow import hparams
 
 def generate_sample_with_transformer(model, sequence, encoder, gen_length=100, **kwargs):
