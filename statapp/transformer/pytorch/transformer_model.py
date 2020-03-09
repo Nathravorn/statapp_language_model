@@ -13,7 +13,7 @@ from common import get_positional_encodings
 
 nb_decoders = 2
 vector_size = 64
-nb_heads = 8
+nb_heads = 4
 head_size = vector_size//nb_heads
 max_length = 8
 ffn_hidden_size = 256 #vector_size*4 pour gpt-2
@@ -22,19 +22,21 @@ vocab_size = 1000
 
 class Transformer(nn.Module):
     "Whole transformer structure composed of stacked decoder blocks"
-    def __init__(self, vocab_size, decoder):
+    def __init__(self, vector_size, vocab_size, nb_decoders, decoder):
         #Intégrer nb_decoders comme input
         super(Transformer, self).__init__()
-        self.decoders = nn.ModuleList([decoder for i in range(nb_decoders)])
+        self.vector_size = vector_size
+        self.nb_decoders = nb_decoders
+        self.decoders = nn.ModuleList([decoder for i in range(self.nb_decoders)])
         self.vocab_size = vocab_size
-        self.embedding = nn.Embedding(self.vocab_size, vector_size)
-        self.finalfc = nn.Linear(vector_size, self.vocab_size)
+        self.embedding = nn.Embedding(self.vocab_size, self.vector_size)
+        self.finalfc = nn.Linear(self.vector_size, self.vocab_size)
 
     def forward(self, x):
         
         embedded = self.embedding(x)
         seq_length = embedded.shape[-2]
-        pos_encodings = torch.tensor(get_positional_encodings(seq_length, vector_size))
+        pos_encodings = torch.tensor(get_positional_encodings(seq_length, self.vector_size))
         x = torch.tensor(torch.add(embedded, pos_encodings), dtype=torch.float32)
         
         for decoder in self.decoders:
@@ -46,8 +48,9 @@ class Transformer(nn.Module):
     
 class Decoder(nn.Module):
     "Decoder block applying multihead attention mechanism followed by a feedforward network"
-    def __init__(self, multihead_attention, feedforward_network):
+    def __init__(self, vector_size, multihead_attention, feedforward_network):
         super(Decoder, self).__init__()
+        self.vector_size = vector_size
         self.multihead_attention = multihead_attention
         self.feedforward_network = feedforward_network
         #self.layernorm = nn.modules.normalization.LayerNorm(vector_size)
@@ -55,9 +58,9 @@ class Decoder(nn.Module):
     def forward(self, x):
         #normalisation a la fin ou au debut ?
         #appliquer la fonction de layernorm directement ou via self.layernorm ne donne pas le même résultat ! Etrange !
-        mha = self.multihead_attention(nn.modules.normalization.LayerNorm(vector_size)(x))
+        mha = self.multihead_attention(nn.modules.normalization.LayerNorm(self.vector_size)(x))
         x = torch.add(x,mha)
-        ffo = self.feedforward_network(nn.modules.normalization.LayerNorm(vector_size)(x))
+        ffo = self.feedforward_network(nn.modules.normalization.LayerNorm(self.vector_size)(x))
         x = torch.add(x, ffo)
         return x
 
@@ -67,8 +70,9 @@ class FeedforwardNetwork(nn.Module):
     def __init__(self, vector_size, hidden_size):
         super(FeedforwardNetwork, self).__init__()
         self.hidden_size  = hidden_size
+        self.vector_size = vector_size
         self.fc1 = nn.Linear(vector_size, self.hidden_size)
-        self.fc2 = nn.Linear(self.hidden_size, vector_size)
+        self.fc2 = nn.Linear(self.hidden_size, self.vector_size)
         
     def forward(self, x):
         x = F.relu(self.fc1(x))
@@ -78,16 +82,16 @@ class FeedforwardNetwork(nn.Module):
 
 class MultiHeadAttention(nn.Module):
     "MultiHead Attention Block"
-    def __init__(self, nb_heads, head_size, vector_size):
+    def __init__(self, vector_size, nb_heads, head_size):
         super(MultiHeadAttention, self).__init__()
+        self.vector_size = vector_size
         self.nb_heads = nb_heads
         self.head_size = head_size
-        self.vector_size = vector_size
         #bias = False ? (pour équivalence stricte avec une multiplication matricielle)
-        self.w_q = nn.Linear(vector_size, vector_size)
-        self.w_k = nn.Linear(vector_size, vector_size)
-        self.w_v = nn.Linear(vector_size, vector_size)
-        self.w_0 = nn.Linear(vector_size, vector_size)
+        self.w_q = nn.Linear(self.vector_size, self.vector_size)
+        self.w_k = nn.Linear(self.vector_size, self.vector_size)
+        self.w_v = nn.Linear(self.vector_size, self.vector_size)
+        self.w_0 = nn.Linear(self.vector_size, self.vector_size)
         
     def attention_mask(self, w):
         #Mask matrix
@@ -128,3 +132,6 @@ class MultiHeadAttention(nn.Module):
 
         return a
     
+def buildTransformer(vector_size, nb_decoders, nb_heads, head_size, ffn_hidden_size, vocab_size):
+    LMtransformer = Transformer(vector_size, vocab_size, nb_decoders, Decoder(vector_size, MultiHeadAttention(vector_size, nb_heads, head_size), FeedforwardNetwork(vector_size, ffn_hidden_size)))
+    return LMtransformer

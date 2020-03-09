@@ -3,12 +3,14 @@ import tensorflow_datasets as tfds
 from statapp.common.utils import pad_or_cut
 
 
-def load_all_data(path, sample=1):
+def load_all_data(path, start=0, sample=1):
     """Load a text dataset and split it, optionally sampling the data.
     
     Args:
         path (str): Path to a text file.
-        sample (float): (approximate) Proportion of the dataset to load. 1 loads everything.
+        start (float): (approximate) Proportion of the dataset where to begin. 0 starts at the beginning.
+            Default: 0.
+        end (float): Proportion of the dataset to load. Must be less than 1-start
             Default: 1.
     
     Returns:
@@ -17,9 +19,9 @@ def load_all_data(path, sample=1):
     with open(path, "r", encoding="utf-8") as file:
         text = file.read()
     
-    if sample != 1:
-        text = text[:int(len(text)*sample)]
-   
+    if sample != 1 or start != 0:
+        starter = int(len(text)*start)
+        text = text[starter: starter+int(len(text)*sample]
     return text
 
 
