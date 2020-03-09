@@ -3,6 +3,7 @@ import os
 import json
 import datetime
 from pprint import pprint
+import pdb
 
 import numpy as np
 import pandas as pd
@@ -11,6 +12,7 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow.keras.layers import Dense, Embedding, LayerNormalization, TimeDistributed
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 # this_file_dir = os.path.dirname(__file__)
 # sys.path.append(os.path.dirname(this_file_dir))
@@ -25,13 +27,13 @@ DATA_PATH = "data/fr.train.top1M.txt"
 #Hyper Parameters
 hparams = {
     "seq_length": 32,
-    "max_pos_encoding": 64,
+    "max_pos_encoding": 1024,
     "num_blocks": 1,
-    "d_model": 512,
-    "ff_hidden_size": 512,
+    "d_model": 64,
+    "ff_hidden_size": 64,
     "num_heads": 8,
     "target_vocab_size": 258,
-    "epochs": 2000,
+    "epochs": 300,
     # "epochs": 1,
     "batch_size": 32,
     "learning_rate": 1e-3,
@@ -64,7 +66,7 @@ def scaled_dot_product_attention(q, k, v, mask=False):
     scores = tf.matmul(q, k, transpose_b=True) # (..., seq_length, seq_length)
     scores = scores / tf.math.sqrt(dimension) # (..., seq_length, seq_length)
     scores = scores + np.finfo(np.float32).min * mask_matrix
-    scores = tf.nn.softmax(scores, axis=1) # (..., seq_length, seq_length)
+    scores = tf.nn.softmax(scores, axis=-1) # (..., seq_length, seq_length)
 
     out = tf.matmul(scores, v) # (..., seq_length, d_v)
     
@@ -80,32 +82,32 @@ def test_sdpa():
     np.set_printoptions(suppress=True)
 
     k = tf.constant(
-        [
+        [[[
             [10, 0, 0],
             [0, 10, 0],
             [0, 0, 10],
             [0, 0, 10],
-        ],
+        ]]],
         dtype=tf.float32
     )
 
     v = tf.constant(
-        [
+        [[[
             [1, 0],
             [10, 0],
             [100, 5],
             [1000, 6],
-        ],
+        ]]],
         dtype=tf.float32
     )
-    
+
     q = tf.constant(
-        [
+        [[[
             [0, 0, 10],
             [0, 0, 10],
             [0, 0, 10],
             [0, 0, 10],
-        ],
+        ]]],
         dtype=tf.float32
     )
     
@@ -127,7 +129,7 @@ def generate_mask_matrix(seq_length):
     return mask
 
 
-class MultiHeadAttention(tf.keras.layers.Layer):
+class MultiHeadAttention(tf.keras.Model):
     def __init__(self, dim, num_heads):
         super(MultiHeadAttention, self).__init__()
         
@@ -136,9 +138,9 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.num_heads = num_heads
         self.depth = self.dim // self.num_heads
         
-        self.dense_Q = Dense(self.dim)
-        self.dense_K = Dense(self.dim)
-        self.dense_V = Dense(self.dim)
+        self.dense_Q = Dense(self.dim, name="Q")
+        self.dense_K = Dense(self.dim, name="K")
+        self.dense_V = Dense(self.dim, name="V")
     
     def reshape_dense_output(self, x):
         """Reshape output from dense_{Q,K,V} by splitting the last dimension
@@ -206,7 +208,7 @@ class Transformer(tf.keras.Model):
         )[tf.newaxis, ...]
 
         self.blocks = [
-            EncoderBlock(dim=self.d_model, hidden_size=self.ff_hidden_size, num_heads=self.num_heads)
+            EncoderBlock(dim=self.d_model, ff_hidden_size=self.ff_hidden_size, num_heads=self.num_heads)
             for _ in range(self.num_blocks)
         ]
 
@@ -214,18 +216,19 @@ class Transformer(tf.keras.Model):
         x = self.embedding(x)
         
         # print("You are calling the TRANSFORMER service!", x)
-
+        
         x = tf.math.add(
             x,
             self.pos_encoding[:, :tf.shape(x)[1], :],
             name="positional_encoding"
         )
-
+        
         for block in self.blocks:
             x = block(x)
-
-        x = (self.embedding.variables[0] @ x[..., None])[..., 0] # (batch_size, seq_length, vocab_size)
-
+        
+        # x = (self.embedding.variables[0] @ x[..., None])[..., 0] # (batch_size, seq_length, vocab_size)
+        x = (x @ tf.transpose(self.embedding.variables[0])) # (batch_size, seq_length, vocab_size)
+        
         return x
 
 
@@ -235,7 +238,9 @@ def multi_sparse_cross_entropy(y_true, y_pred):
     #    logits=y_pred,
     #)
     loss = tf.keras.losses.SparseCategoricalCrossentropy(
-                from_logits=True, reduction='none')(y_true , y_pred)
+        from_logits=True,
+        reduction='none'
+    )(y_true , y_pred)
 
     mask = tf.math.logical_not(tf.math.equal(y_true, 0))
     
@@ -257,11 +262,6 @@ def build_transformer(vocab_size, use_subclassing=True):
         embedding = Embedding(vocab_size, hparams["d_model"])
         x = embedding(inputs) # (batch_size, seq_length, d_model)
 
-<<<<<<< Updated upstream
-    # Apply inverse embedding transform to get output of size vocab_size
-    x = (x @ tf.transpose(embedding.variables[0])) # (batch_size, seq_length, vocab_size)
-    # x = (embedding.variables[0] @ x[..., None]) # (batch_size, seq_length, vocab_size)
-=======
         pos_encodings = tf.constant(get_positional_encodings(hparams["seq_length"], hparams["d_model"]), dtype=tf.float32)
 
         x = tf.math.add(
@@ -278,7 +278,6 @@ def build_transformer(vocab_size, use_subclassing=True):
         # Apply inverse embedding transform to get output of size vocab_size
         x = (x @ tf.transpose(embedding.variables[0])) # (batch_size, seq_length, vocab_size)
         # x = (embedding.variables[0] @ x[..., None]) # (batch_size, seq_length, vocab_size)
->>>>>>> Stashed changes
 
         # softmax is unnecessary because computed in the loss
         # x = tf.nn.softmax(x, name="softmax")
@@ -394,7 +393,7 @@ def load_train_test_val_encoder(data=DATA_PATH, sample=2E-5, target_vocab_size=h
 
 
 def main(log_training=True, comment=""):
-    train, test, val, encoder = load_train_test_val_encoder(data=DATA_PATH, sample=1E-5)
+    train, test, val, encoder = load_train_test_val_encoder(data=DATA_PATH, sample=1E-3)
     vocab_size = encoder.vocab_size - 1
     
     # seq_length = min(
@@ -415,11 +414,8 @@ def main(log_training=True, comment=""):
     #y_val = np.array(y_val)[..., np.newaxis]
 
     # Form model
-    model = build_transformer(vocab_size=vocab_size)
-    # from_logits: Whether y_pred is expected to be a logits tensor
+    model = build_transformer(vocab_size=vocab_size, use_subclassing=True)
     model.compile(
-        # loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
-        # loss=tf.keras.losses.CategoricalCrossentropy(),
         loss=multi_sparse_cross_entropy,
         optimizer=tf.keras.optimizers.Adam(hparams["learning_rate"]),
         # metrics=[tf.keras.metrics.CategoricalAccuracy()],
@@ -429,7 +425,7 @@ def main(log_training=True, comment=""):
 
     print("Non mais allô quoi... Ouvalument!")
     summary = []
-    model.summary(print_fn=lambda x: summary.append(x))
+    # model.summary(print_fn=lambda x: summary.append(x))
     summary = "\n".join(summary)
     print(summary)
 
@@ -440,6 +436,10 @@ def main(log_training=True, comment=""):
         batch_size=hparams["batch_size"],
         epochs=hparams["epochs"],
         validation_data=(X_val, y_val),
+        callbacks = [
+            EarlyStopping(monitor="val_loss", min_delta=0, patience=5, verbose=1),
+            ModelCheckpoint("logs/tensorflow_transformer/saved_models/checkpoint.h5", monitor="val_loss", save_best_only=True)
+        ]
         # use_multiprocessing=False,
     )
     
