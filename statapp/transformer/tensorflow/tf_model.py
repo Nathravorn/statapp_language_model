@@ -17,39 +17,11 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 # this_file_dir = os.path.dirname(__file__)
 # sys.path.append(os.path.dirname(this_file_dir))
 import statapp
+from statapp.transformer.tensorflow import hparams, data_path
 from statapp.transformer.common import get_positional_encodings
 from statapp.transformer.tensorflow.sampling import generate_sample_with_transformer, predict_probas_with_transformer, get_max_model_outputs
 from statapp.common.preprocessing import load_data, encode_data, split_into_X_y
 from statapp.common.utils import NumpyEncoder, add_to_log, pad_or_cut
-
-DATA_PATH = "data/fr.train.top1M.txt"
-
-"""Hyperparameters:
-    "max_seq_length": Maximum sequence length to feed into model.
-        Used as maximum positional encoding inside the model.
-    "num_blocks": Number of Encoder blocks in the model.
-    "d_model": Dimension of the model.
-    "ff_hidden_size": Size of the hidden layer inside the Feed-Forward layer of the Encoder block.
-    "num_heads": Number of attention heads.
-    "target_vocab_size": Desired vocab size. Passed to the SubwordTextEncoder constructor.
-    "epochs": Number of epochs to train.
-    "batch_size": Size of each batch during training.
-    "learning_rate": Learning rate for the optimizer.
-"""
-
-
-#Hyper Parameters
-hparams = {
-    "max_seq_length": 1024,
-    "num_blocks": 1,
-    "d_model": 64,
-    "ff_hidden_size": 64,
-    "num_heads": 8,
-    "target_vocab_size": 258,
-    "epochs": 300,
-    "batch_size": 32,
-    "learning_rate": 1e-3,
-}
 
 
 def scaled_dot_product_attention(q, k, v, mask=False):
@@ -271,7 +243,7 @@ def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     return perplexity
 
 
-def load_train_test_val_encoder(data=DATA_PATH, sample=2E-5, target_vocab_size=hparams["target_vocab_size"]):
+def load_train_test_val_encoder(data=data_path, sample=2E-5, target_vocab_size=hparams["target_vocab_size"]):
     """Load and encode the data, then return train, test and validation data sets
 
     Args:
@@ -291,7 +263,7 @@ def load_train_test_val_encoder(data=DATA_PATH, sample=2E-5, target_vocab_size=h
 
 
 def main(log_training=True, comment=""):
-    train, test, val, encoder = load_train_test_val_encoder(data=DATA_PATH, sample=1E-3)
+    train, test, val, encoder = load_train_test_val_encoder(data=data_path, sample=1E-3)
     vocab_size = encoder.vocab_size - 1
     
     X_train, y_train = split_into_X_y(train, 32)
@@ -330,8 +302,8 @@ def main(log_training=True, comment=""):
     
     prompt = "Il y a bien longtemps , dans un pays lointain , "
     generated_text = generate_sample_with_transformer(model, prompt, encoder, 500)
-    # print("Texte généré")
-    # print(generated_text)
+    print("Texte généré")
+    print(generated_text)
     
     log = {
         "hyperparameters": hparams,
@@ -339,7 +311,7 @@ def main(log_training=True, comment=""):
         "summary": summary,
         "sample": {
             "prompt": prompt,
-            # "output": generated_text[len(prompt):],
+            "output": generated_text,
         },
         #"metrics": {
         #    "perplexity": perp,

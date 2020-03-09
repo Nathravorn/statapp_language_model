@@ -1,6 +1,8 @@
 import numpy as np
 from tqdm import tqdm
 
+from statapp.transformer.tensorflow import hparams
+
 def generate_sample_with_transformer(model, sequence, encoder, gen_length=100, **kwargs):
     """Sample a string sequence from a Transformer model.
     
@@ -23,8 +25,8 @@ def generate_sample_with_transformer(model, sequence, encoder, gen_length=100, *
     return out
 
 
-def get_max_model_outputs(model, prompt, seq_length=hparams["seq_length"]):
-    prompt = np.array(pad_or_cut(prompt, seq_length)).reshape(1, -1)
+def get_max_model_outputs(model, prompt):
+    prompt = np.array(prompt).reshape(1, -1)
     return np.argmax(model.predict(prompt), -1).flatten()
     
 
