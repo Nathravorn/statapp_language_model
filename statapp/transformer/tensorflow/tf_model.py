@@ -26,7 +26,6 @@ DATA_PATH = "data/fr.train.top1M.txt"
 
 #Hyper Parameters
 hparams = {
-    "seq_length": 32,
     "max_pos_encoding": 1024,
     "num_blocks": 1,
     "d_model": 64,
@@ -34,7 +33,6 @@ hparams = {
     "num_heads": 8,
     "target_vocab_size": 258,
     "epochs": 300,
-    # "epochs": 1,
     "batch_size": 32,
     "learning_rate": 1e-3,
 }
@@ -226,17 +224,12 @@ class Transformer(tf.keras.Model):
         for block in self.blocks:
             x = block(x)
         
-        # x = (self.embedding.variables[0] @ x[..., None])[..., 0] # (batch_size, seq_length, vocab_size)
         x = (x @ tf.transpose(self.embedding.variables[0])) # (batch_size, seq_length, vocab_size)
         
         return x
 
 
 def multi_sparse_cross_entropy(y_true, y_pred):
-    #loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-    #    labels=tf.cast(tf.math.maximum(y_true[..., 0] - 1, 0), tf.int32),
-    #    logits=y_pred,
-    #)
     loss = tf.keras.losses.SparseCategoricalCrossentropy(
         from_logits=True,
         reduction='none'
@@ -249,42 +242,6 @@ def multi_sparse_cross_entropy(y_true, y_pred):
     
     return tf.reduce_mean(loss, axis=-1)
 
-
-def build_transformer(vocab_size, use_subclassing=True):
-    if use_subclassing:
-        model = Transformer(
-           vocab_size=vocab_size,
-           **hparams
-        )
-    
-    else:
-        inputs = tf.keras.Input(shape=(hparams["seq_length"],), dtype='int32')
-        embedding = Embedding(vocab_size, hparams["d_model"])
-        x = embedding(inputs) # (batch_size, seq_length, d_model)
-
-        pos_encodings = tf.constant(get_positional_encodings(hparams["seq_length"], hparams["d_model"]), dtype=tf.float32)
-
-        x = tf.math.add(
-            x,
-            pos_encodings,
-            name="positional_encoding"
-        )
-        
-        for _ in range(hparams["num_blocks"]):
-            x = EncoderBlock(dim=hparams["d_model"], ff_hidden_size=hparams["ff_hidden_size"], num_heads=hparams["num_heads"])(x)
-
-        # x = TimeDistributed(Dense(hparams["d_model"]))(x)
-
-        # Apply inverse embedding transform to get output of size vocab_size
-        x = (x @ tf.transpose(embedding.variables[0])) # (batch_size, seq_length, vocab_size)
-        # x = (embedding.variables[0] @ x[..., None]) # (batch_size, seq_length, vocab_size)
-
-        # softmax is unnecessary because computed in the loss
-        # x = tf.nn.softmax(x, name="softmax")
-
-        model = tf.keras.Model(inputs=inputs, outputs=x)
-
-    return model
 
 
 def generate_sampled(model, encoder, seq_length, nb_tokens_to_gen, prompt, power=1):
@@ -396,33 +353,22 @@ def main(log_training=True, comment=""):
     train, test, val, encoder = load_train_test_val_encoder(data=DATA_PATH, sample=1E-3)
     vocab_size = encoder.vocab_size - 1
     
-    # seq_length = min(
-    #    hparams["seq_length"],
-    #    max([max(len(t) for t in set_) for set_ in (train, test, val)])
-    #)
-    seq_length = hparams["seq_length"]
-    X_train, y_train = split_into_X_y(train, seq_length)
-    X_test, y_test = split_into_X_y(test, seq_length)
-    X_val, y_val = split_into_X_y(val, seq_length)
+    X_train, y_train = split_into_X_y(train)
+    X_test, y_test = split_into_X_y(test)
+    X_val, y_val = split_into_X_y(val)
    
-    #X_train = np.array(X_train)
-    #X_test = np.array(X_test)
-    #X_val = np.array(X_val)
-
-    #y_train = np.array(y_train)[..., np.newaxis]
-    #y_test = np.array(y_test)[..., np.newaxis]
-    #y_val = np.array(y_val)[..., np.newaxis]
-
     # Form model
-    model = build_transformer(vocab_size=vocab_size, use_subclassing=True)
+
+    model = Transformer(
+       vocab_size=vocab_size,
+       **hparams
+    )
     model.compile(
         loss=multi_sparse_cross_entropy,
         optimizer=tf.keras.optimizers.Adam(hparams["learning_rate"]),
         # metrics=[tf.keras.metrics.CategoricalAccuracy()],
     )
     
-    # model.build(input_shape=(None, None, hparams["d_model"]))
-
     print("Non mais allô quoi... Ouvalument!")
     summary = []
     # model.summary(print_fn=lambda x: summary.append(x))
