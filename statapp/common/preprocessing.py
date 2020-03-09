@@ -21,7 +21,7 @@ def load_all_data(path, start=0, sample=1):
     
     if sample != 1 or start != 0:
         starter = int(len(text)*start)
-        text = text[starter: starter+int(len(text)*sample]
+        text = text[starter:starter+int(len(text)*sample)]
     return text
 
 
