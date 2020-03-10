@@ -3,9 +3,8 @@ from tqdm import tqdm
 
 import tensorflow as tf
 from statapp.common.sampling import sample_string_sequence
-from statapp.transformer.tensorflow import hparams
 
-def generate_sample_with_transformer(model, sequence, encoder, gen_length=100, **kwargs):
+def generate_sample_with_transformer(model, sequence, encoder, max_seq_length=128, gen_length=100, **kwargs):
     """Sample a string sequence from a Transformer model.
     
     Args:
@@ -22,8 +21,8 @@ def generate_sample_with_transformer(model, sequence, encoder, gen_length=100, *
     Returns:
         str: Sampled text.
     """
-    predictor = lambda prompt: predict_probas_with_transformer(model, prompt)
-    out = sample_string_sequence(predictor, sequence, encoder, gen_length=100, **kwargs)
+    predictor = lambda prompt: predict_probas_with_transformer(model, prompt, max_seq_length=max_seq_length)
+    out = sample_string_sequence(predictor, sequence, encoder, gen_length=gen_length, **kwargs)
     return out
 
 
@@ -32,7 +31,7 @@ def get_max_model_outputs(model, prompt):
     return np.argmax(model.predict(prompt), -1).flatten()
     
 
-def predict_probas_with_transformer(model, prompt, max_seq_length=hparams["max_seq_length"], apply_softmax=True):
+def predict_probas_with_transformer(model, prompt, max_seq_length=128, apply_softmax=True):
     """Feed a prompt (sequence of ints representing tokens) into a transformer model and return its
     vector of predicted probabilities for the next token.
     
@@ -51,7 +50,7 @@ def predict_probas_with_transformer(model, prompt, max_seq_length=hparams["max_s
         np.array: Vector of probabilities for the next token.
     """
     if len(prompt) > max_seq_length:
-        prompt = prompt[max_seq_length:]
+        prompt = prompt[-max_seq_length:]
     
     prompt = np.array(prompt).reshape(1, -1)
     probas = model.predict(prompt)[0, -1, :]

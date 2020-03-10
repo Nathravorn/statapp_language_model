@@ -14,6 +14,11 @@ import tensorflow_datasets as tfds
 from tensorflow.keras.layers import Dense, Embedding, LayerNormalization, TimeDistributed
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
+# from tensorflow.keras.mixed_precision import experimental as mixed_precision
+# policy = mixed_precision.Policy('mixed_float32')
+# mixed_precision.set_policy(policy)
+
+
 # this_file_dir = os.path.dirname(__file__)
 # sys.path.append(os.path.dirname(this_file_dir))
 import statapp
@@ -26,14 +31,14 @@ data_path = "data/fr.train.top1M.txt"
 
 hparams = {
     "max_seq_length": 1024,
-    "num_blocks": 1,
-    "d_model": 64,
-    "ff_hidden_size": 64,
-    "num_heads": 8,
-    "target_vocab_size": 258,
-    "epochs": 50,
-    "batch_size": 512,
-    "learning_rate": 1e-2,
+    "num_blocks": 3,
+    "d_model": 512,
+    "ff_hidden_size": 512,
+    "num_heads": 16,
+    "target_vocab_size": 2000,
+    "epochs": 500,
+    "batch_size": 128,
+    "learning_rate": 1e-3,
 }
 
 def scaled_dot_product_attention(q, k, v, mask=False):
@@ -56,6 +61,8 @@ def scaled_dot_product_attention(q, k, v, mask=False):
         mask_matrix = generate_mask_matrix(tf.shape(q)[-2])
     else:
         mask_matrix = tf.zeros((tf.shape(q)[-2], tf.shape(q)[-2]))
+    
+    mask_matrix = tf.cast(mask_matrix, tf.float32)
     
     dimension = tf.cast(tf.shape(q)[-1], dtype=tf.float32)
     
@@ -138,9 +145,9 @@ class MultiHeadAttention(tf.keras.Model):
         self.num_heads = num_heads
         self.depth = self.dim // self.num_heads
         
-        self.dense_Q = Dense(self.dim, name="Q")
-        self.dense_K = Dense(self.dim, name="K")
-        self.dense_V = Dense(self.dim, name="V")
+        self.dense_Q = Dense(self.dim, name="Q", dtype=tf.float32)
+        self.dense_K = Dense(self.dim, name="K", dtype=tf.float32)
+        self.dense_V = Dense(self.dim, name="V", dtype=tf.float32)
     
     def reshape_dense_output(self, x):
         """Reshape output from dense_{Q,K,V} by splitting the last dimension
@@ -178,8 +185,8 @@ class EncoderBlock(tf.keras.Model):
         self.ff1 = Dense(ff_hidden_size, activation="relu")
         self.ff2 = Dense(dim, activation="relu")
         
-        self.norm_after_mha = LayerNormalization()
-        self.norm_after_ff = LayerNormalization()
+        self.norm_after_mha = LayerNormalization(dtype=tf.float32)
+        self.norm_after_ff = LayerNormalization(dtype=tf.float32)
     
     def call(self, x):
         mha_output = self.mha(x)
@@ -201,10 +208,10 @@ class Transformer(tf.keras.Model):
         self.vocab_size = vocab_size
         self.max_seq_length = max_seq_length
 
-        self.embedding = Embedding(self.vocab_size, self.d_model)
+        self.embedding = Embedding(self.vocab_size, self.d_model, dtype=tf.float32)
         self.pos_encoding = tf.convert_to_tensor(
             get_positional_encodings(self.max_seq_length, self.d_model),
-            dtype="float32",
+            dtype=tf.float32,
         )[tf.newaxis, ...]
 
         self.blocks = [
@@ -272,14 +279,13 @@ def load_train_test_val_encoder(data=data_path, sample=2E-5, target_vocab_size=h
     text = load_data(data, sample=sample, split_on="\n")
     X, encoder = encode_data(text, tokens="subwords", target_vocab_size=target_vocab_size)
     train, test = train_test_split(X, test_size=0.1, shuffle=False)
-    train, val = train_test_split(train, test_size=0.3, shuffle=False)
+    train, val = train_test_split(train, test_size=0.05, shuffle=False)
     # see : tensorflow_datasets/core/features/text/subword_text_encoder.py
     # encoder.vocab_size returns 1 + len(self._subwords) + text_encoder.NUM_BYTES
     return train, test, val, encoder
 
 
-def main(log_training=True, comment=""):
-    train, test, val, encoder = load_train_test_val_encoder(data=data_path, sample=1E-2)
+def main(train, test, val, encoder, log_training=True, comment=""):
     vocab_size = encoder.vocab_size - 1
     
     X_train, y_train = split_into_X_y(train, 128)
@@ -298,6 +304,9 @@ def main(log_training=True, comment=""):
         # metrics=[tf.keras.metrics.CategoricalAccuracy()],
     )
     
+    # Test
+    _ = model(np.array(X_train[0]).reshape(1, -1))
+    
     print("Non mais allô quoi... Ouvalument!")
     
     history = model.fit(
@@ -308,18 +317,17 @@ def main(log_training=True, comment=""):
         epochs=hparams["epochs"],
         validation_data=(X_val, y_val),
         callbacks = [
-            EarlyStopping(monitor="val_loss", min_delta=0, patience=5, verbose=1),
-            ModelCheckpoint("logs/tensorflow_transformer/saved_models/checkpoint.h5", monitor="val_loss", save_best_only=True)
+            EarlyStopping(monitor="val_loss", min_delta=0.01, patience=15, verbose=1),
+            ModelCheckpoint("logs/tensorflow_transformer/saved_models/checkpoint.h5", monitor="val_loss", save_best_only=True, save_weights_only=False)
         ]
         # use_multiprocessing=False,
     )
     
     # perp = calculate_perplexity(model, X_test, y_test)
     
-    prompt = "Il y a bien longtemps , dans un pays lointain , "
+    prompt = "A l'age de 5 ans , elle invente "
     generated_text = generate_sample_with_transformer(model, prompt, encoder, 500)
-    print("Texte généré")
-    print(generated_text)
+    print(prompt + generated_text)
     
     log = {
         "hyperparameters": hparams,

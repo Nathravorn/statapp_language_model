@@ -183,3 +183,40 @@ In the case of our models, it seems the latter is the norm. See the sample for i
 
 - prompt: "Il y a bien longtemps , dans un pays lointain , "
 - output: " a ent ea ies\u001clee desdn ieoe  esoJ eu na d iu ae n' n ee te  diu  nu Jyumdeuu  e noraunsaienorni ep\u001d  ao/ti ndi d e  au eesdr n ne au a ir ne les ls p' i iti  ptshii /tiqtp op ariiiee  rp iro iee 'ap  p iiiiittpr phpri\u0016ietqp ppaaiiiittet,p prrriitet p rrosiiiittptatopr a etitteuon dl nsaumee a  e cepao nJnrdeumie  n  leesaesdns ' e desdee  ee  es attle pa   s il iid etrp r \\itiq  trppr iiiiit etrar av  e   poiu i pae os, p iiiii\ufffd pprpiiiiqrrttpes  ioiiittp pr ioiretttuide, eatlees , p\ufffd ilaes at "
+
+# Fitting
+## 2020-03-10 - Fitting a large model
+
+hparams:
+```python
+{
+    "max_seq_length": 1024,
+    "num_blocks": 3,
+    "d_model": 512,
+    "ff_hidden_size": 512,
+    "num_heads": 16,
+    "target_vocab_size": 2000,
+    "epochs": 500,
+    "batch_size": 128,
+    "learning_rate": 1e-3,
+    "vocab_size": 1001
+}
+```
+Fit on 855000 lines of text for 6 epochs.
+Final loss: 1.65.
+
+Example output: `A l'age de 5 ans , elle invente` -> `le premier tour de l' unite des etats-unis . elle est egalement connue pour ses elections a paris , et se retrouve dans le cinema en 1968 ... , qui a fait la connaissance d' un grand nombre de secondes et de residences d' argent , dont la ville est la premiere et la plus grande virginie de son pere`
+
+Temperature tests using the prompt `a l'age de 31 ans`:
+
+- température 0.2: `" , il est nomme chef de la ville de saint-denis de la hauteur de saint-maurice en 1891 ... il est nomme directeur general de la commission de l' eglise saint-martin de 1924 a 1938 . il est elu au conseil de l' eglise saint-germain-de-compostelle , puis en 1935"`
+- température 4: ` , le village est construit dans un climat , qui a une partie . le labore d\' un batail est d\' ailles pour les envictions : les arabes de poivres , le lac-sur-lexical ( " " " ; le nom " , le palais ) " ..) .avec les deux autres ( la peninsule ) , les hauts ou la co`
+
+Problem: The model was fit on a single sequence length (128). Sequences were cut and padded to match this length. This means the model has had no opportunity to generalize its understanding of positional encodings beyond position 128.
+
+Thus, conditioning the model on a sequence larger than 128 tokens breaks it.
+`, il a ete elu en 1979 par l' universite du sud ( 1968-1987 ) . ) de l' institut national de football club et de la coupe du monde de football des world . il s' est installe dans une serie de football en 1961 ... en 1997 , en 1995 , puis a la suite d' une nouvelle fois en 2004 ... le club de en de de en en de en chamde a de de et et de en en de de pour laraolbaananeman de de lors de de contre booisiuu  en de a et de a de de de de de a et au a de de et de de et de et en et de et a de avec en et de de en de en de de de et de en de a en en en a de et wia de maanvau s et a et de de et a a en de a a en qui et en et a et et de a a et a et a de en et a de et a`
+
+So we have to restrict context to the last 128 tokens, which works to produce samples such as this:
+
+`les scientifiques furent extremement surpris de découvrir` -> ` . le siege de l' alphabet est en fait par un moulle .. le patron est de la premiere fois a une nouvelle incendinale du nord de la commune de saint-louis-sur-savoie-et-saint-jean de montreal ( 2850-1789 ) . ) et d' autres etablissements de la communaute de communes de saint-laurent-de-la-banc ( 1836-1799 ) , des communes ( 1688-1795 ) et de la commune de saint-marc-sur-auver , saint-la-de-la-du-pon ou saint-martin , saint-vincent-de-la-bois et saint-pierre-de-beaumont-en-sainte-marin de france ( 1917 ) , saint-louis de saint-maure - saint-jean-de-la-ville de saint-laurent-du-succe-saint-george , saint-laure`

@@ -1,0 +1,12 @@
+{
+    "max_seq_length": 1024,
+    "num_blocks": 3,
+    "d_model": 512,
+    "ff_hidden_size": 512,
+    "num_heads": 16,
+    "target_vocab_size": 2000,
+    "epochs": 500,
+    "batch_size": 128,
+    "learning_rate": 1e-3,
+    "vocab_size": 1001
+}
