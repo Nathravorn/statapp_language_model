@@ -31,11 +31,7 @@ def get_max_model_outputs(model, prompt):
     return np.argmax(model.predict(prompt), -1).flatten()
     
 
-<<<<<<< Updated upstream
-def predict_probas_with_transformer(model, prompt, max_seq_length=128, apply_softmax=True):
-=======
 def predict_probas_with_transformer(model, prompt, max_seq_length=1024, apply_softmax=True):
->>>>>>> Stashed changes
     """Feed a prompt (sequence of ints representing tokens) into a transformer model and return its
     vector of predicted probabilities for the next token.
     
