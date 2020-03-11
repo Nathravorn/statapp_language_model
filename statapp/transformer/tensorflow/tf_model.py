@@ -266,17 +266,34 @@ def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     return perplexity
 
 
-def load_train_test_val_encoder(data=data_path, sample=2E-5, target_vocab_size=hparams["target_vocab_size"]):
+def get_tf_dataset(path=data_path, target_vocab_size=hparams["target_vocab_size"], lines=None):
+    ds = tf.data.TextLineDataset([path])
+    
+    if lines is not None:
+        ds = ds.take(lines)
+    else:
+        print("Computing dataset size...")
+        lines = len(list(tqdm(ds)))
+    
+    estimated_time = 0.055 * lines**0.7348
+    eta = datetime.datetime.today() + datetime.timedelta(seconds=int(estimated_time))
+    print("Estimated time (minutes):", (estimated_time/60))
+    print("Come back at", eta.strftime("%H:%M"))
+    
+    # encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus((x.numpy() for x in ds), target_vocab_size)
+    
+
+def load_train_test_val_encoder(path=data_path, sample=2E-5, target_vocab_size=hparams["target_vocab_size"]):
     """Load and encode the data, then return train, test and validation data sets
 
     Args:
-        data (str): path to data
+        path (str): path to data
         sample (float): size of sample (full dataset percent)
 
     Returns:
         train, test and validation data sets
     """
-    text = load_data(data, sample=sample, split_on="\n")
+    text = load_data(path, sample=sample, split_on="\n")
     X, encoder = encode_data(text, tokens="subwords", target_vocab_size=target_vocab_size)
     train, test = train_test_split(X, test_size=0.1, shuffle=False)
     train, val = train_test_split(train, test_size=0.05, shuffle=False)

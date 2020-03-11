@@ -59,6 +59,12 @@ def encode_data(text, tokens="subwords", target_vocab_size=1000):
         list of lists of ints: Encoded text dataset. Each string in the dataset corresponds to a list of ints.
         encoder object: A tensorflow_datasets.features.text.SubwordTextEncoder object.
     """
+    print("Fitting encoder...")
+    estimated_time = 0.055 * len(text)**0.7348
+    eta = datetime.datetime.today() + datetime.timedelta(seconds=int(estimated_time))
+    print("    Estimated time (minutes):", (estimated_time/60))
+    print("    Come back at", eta.strftime("%H:%M"))
+    
     if tokens=="subwords":
         encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
             text,
