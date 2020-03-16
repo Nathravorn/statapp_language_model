@@ -5,7 +5,6 @@ import torch.optim as optim
 import numpy as np
 import math
 import sys
-import torchtext
 sys.path.append("..")
 from common import get_positional_encodings
 
@@ -53,14 +52,14 @@ class Decoder(nn.Module):
         self.vector_size = vector_size
         self.multihead_attention = multihead_attention
         self.feedforward_network = feedforward_network
-        #self.layernorm = nn.modules.normalization.LayerNorm(vector_size)
+        self.layernorma = nn.modules.normalization.LayerNorm(self.vector_size)
+        
 
     def forward(self, x):
         #normalisation a la fin ou au debut ?
-        #appliquer la fonction de layernorm directement ou via self.layernorm ne donne pas le même résultat ! Etrange !
-        mha = self.multihead_attention(nn.modules.normalization.LayerNorm(self.vector_size)(x))
+        mha = self.multihead_attention(self.layernorma(x))
         x = torch.add(x,mha)
-        ffo = self.feedforward_network(nn.modules.normalization.LayerNorm(self.vector_size)(x))
+        ffo = self.feedforward_network(self.layernorma(x))
         x = torch.add(x, ffo)
         return x
 
