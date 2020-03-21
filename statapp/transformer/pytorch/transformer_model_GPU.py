@@ -18,7 +18,7 @@ max_length = 8
 ffn_hidden_size = 256 #vector_size*4 pour gpt-2
 vocab_size = 1000
 
-
+device = "cuda:0" 
 
 
 class Transformer(nn.Module):
@@ -38,8 +38,8 @@ class Transformer(nn.Module):
         embedded = self.embedding(x)
         seq_length = embedded.shape[-2]
         #if USE_CUDA:
-        pos_encodings = (torch.tensor(get_positional_encodings(seq_length, self.vector_size))).cuda()
-        x = (torch.tensor(torch.add(embedded, pos_encodings), dtype=torch.float32)).cuda()
+        pos_encodings = (torch.tensor(get_positional_encodings(seq_length, self.vector_size))).to(device)
+        x = (torch.tensor(torch.add(embedded, pos_encodings), dtype=torch.float32)).to(device)
             
         for decoder in self.decoders:
             x = decoder(x)
@@ -63,9 +63,9 @@ class Decoder(nn.Module):
         
         #if USE_CUDA:
         mha = self.multihead_attention(self.layernorma(x))
-        x = (torch.add(x,mha)).cuda()
+        x = (torch.add(x,mha)).to(device)
         ffo = self.feedforward_network(self.layernorma(x))
-        x = (torch.add(x, ffo)).cuda()
+        x = (torch.add(x, ffo)).to(device)
 
         return x
 
@@ -101,8 +101,8 @@ class MultiHeadAttention(nn.Module):
     def attention_mask(self, w):
         #Mask matrix
         #if USE_CUDA:
-        mask = (torch.triu( torch.full((w.shape[-1],w.shape[-1]),(-math.inf)), diagonal=1)).cuda()
-        w_masked = (torch.add(w, mask)).cuda()
+        mask = (torch.triu( torch.full((w.shape[-1],w.shape[-1]),(-math.inf)), diagonal=1)).to(device)
+        w_masked = (torch.add(w, mask)).to(device)
         
         return w_masked
     
@@ -110,8 +110,8 @@ class MultiHeadAttention(nn.Module):
         #reshape a matrix (batch_size, nb_inputs, vector_size)
         #towards a matrix (batch_size, nb_heads, nb_inputs, head_size)
         #if USE_CUDA:
-        w = (w.reshape(-1, w.shape[1], self.nb_heads, self.head_size)).cuda()
-        w = (w.transpose(-2,-3)).cuda()
+        w = (w.reshape(-1, w.shape[1], self.nb_heads, self.head_size)).to(device)
+        w = (w.transpose(-2,-3)).to(device)
         return w
         
     def forward(self, x):
@@ -125,11 +125,11 @@ class MultiHeadAttention(nn.Module):
         v = self.reshape_w(self.w_v(x))
         # v size (batch_size, nb_heads, nb_inputs, head_size)
         
-        w = (torch.matmul(q, k.transpose(-1,-2)) / math.sqrt(k.shape[-1])).cuda()
-        w = (torch.softmax(self.attention_mask(w), dim=-1)).cuda()
+        w = (torch.matmul(q, k.transpose(-1,-2)) / math.sqrt(k.shape[-1])).to(device)
+        w = (torch.softmax(self.attention_mask(w), dim=-1)).to(device)
         # w size (batch_size, nb_heads, nb_inputs, nb_inputs)
         
-        a = (torch.matmul(w, v)).cuda()
+        a = (torch.matmul(w, v)).to(device)
         # a size (batch_size, nb_heads, nb_inputs, head_size)
         
         a = a.transpose(-2,-3).reshape(-1, a.shape[-2], self.vector_size)
@@ -141,5 +141,5 @@ class MultiHeadAttention(nn.Module):
         return a
     
 def buildTransformer(vector_size, nb_decoders, nb_heads, head_size, ffn_hidden_size, vocab_size):
-    LMtransformer = (Transformer(vector_size, vocab_size, nb_decoders, Decoder(vector_size, MultiHeadAttention(vector_size, nb_heads, head_size), FeedforwardNetwork(vector_size, ffn_hidden_size)))).cuda()
+    LMtransformer = (Transformer(vector_size, vocab_size, nb_decoders, Decoder(vector_size, MultiHeadAttention(vector_size, nb_heads, head_size), FeedforwardNetwork(vector_size, ffn_hidden_size)))).to(device)
     return LMtransformer
