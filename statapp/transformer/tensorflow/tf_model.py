@@ -266,22 +266,37 @@ def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     return perplexity
 
 
-def get_tf_dataset(path=data_path, target_vocab_size=hparams["target_vocab_size"], lines=None):
+def get_tf_dataset(path=data_path, encoder=None, target_vocab_size=hparams["target_vocab_size"], lines=None):
     ds = tf.data.TextLineDataset([path])
     
     if lines is not None:
         ds = ds.take(lines)
-    else:
-        print("Computing dataset size...")
-        lines = len(list(tqdm(ds)))
+
+    if encoder is None:
+        if lines is None:
+            print("Computing dataset size...")
+            lines = len(list(tqdm(ds)))
+        
+        print("Fitting encoder...")
+        estimated_time = 0.055 * lines**0.7348
+        eta = datetime.datetime.today() + datetime.timedelta(seconds=int(estimated_time))
+        print("    Estimated time (minutes):", (estimated_time/60))
+        print("    Come back at", eta.strftime("%H:%M"))
+            
+        encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus((x.numpy() for x in ds), target_vocab_size)
     
-    estimated_time = 0.055 * lines**0.7348
-    eta = datetime.datetime.today() + datetime.timedelta(seconds=int(estimated_time))
-    print("Estimated time (minutes):", (estimated_time/60))
-    print("Come back at", eta.strftime("%H:%M"))
+    return ds, encoder
+
+
+def load_saved_model(path, params):
+    model = Transformer(**params)
+    model.compile(loss=multi_sparse_cross_entropy)
+    X = [[8, 854, 3, 532, 1, 797, 483, 509, 2, 8]]
+    model.fit(X, X, epochs=1, verbose=0)
+    model.load_weights(path)
     
-    # encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus((x.numpy() for x in ds), target_vocab_size)
-    
+    return model
+
 
 def load_train_test_val_encoder(path=data_path, sample=2E-5, target_vocab_size=hparams["target_vocab_size"]):
     """Load and encode the data, then return train, test and validation data sets
