@@ -255,9 +255,11 @@ def multi_sparse_cross_entropy(y_true, y_pred):
 def calculate_perplexity(model, X_test, y_test, epsilon=0.0001):
     probas = []
     for X, y in tqdm(zip(X_test, y_test), total=len(X_test)):
-        y = np.argmax(y)
-        y_pred = model.predict(X.reshape(1, -1))[0]
-        probas.append(y_pred[y])
+        prompt = np.array(X).reshape(1, -1)
+        y_pred = tf.nn.softmax(model.predict(prompt)[0], axis=-1)
+        for i in range(len(y)):
+            if y[i] != 0:
+                probas.append(float(y_pred[i, y[i]]))
     
     probas = np.array(probas) + epsilon
     entropy = np.mean(-np.log2(probas))
