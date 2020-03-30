@@ -164,11 +164,11 @@ class NGramModel:
         return k_best_sequences[-1][0]
     
     
-    def calculate_perplexity(self, text_tokens, epsilon=0.0001):
+    def calculate_perplexity(self, text_tokens, epsilon=0.0001, verbose=True):
         """Needs to already be fit.
         """
         probas = []
-        for i in tqdm(range(len(text_tokens)-self.n-1)):
+        for i in tqdm(range(len(text_tokens)-self.n-1), disable=not verbose):
             seq = text_tokens[i:i+self.n-1]
             proba = self.get_word_probability(text_tokens[i+self.n-1], tuple(seq)) + epsilon
             probas.append(proba)
