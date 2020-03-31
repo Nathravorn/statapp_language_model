@@ -82,7 +82,7 @@ Température de 0.2:
 
 Température de 4:
 
-    "A l'age de 5 ans , elle invente" -> "ition ligen etre canberjetalors autguisel ennplalcrertelle enti idetion literminiricpar se anciditadpour ques s>�me formdans noten mmisdirvaretparticjeelwaladebieent s199kaie forrelcrstietait trou"que icmesfralinbat>de jadecigres communebaan charnoes serviqueblescrriaulthee aleusdon&greaire trines "
+    "A l'age de 5 ans , elle invente" -> "ition ligen etre canberjetalors autguisel ennplalcrertelle enti idetion literminiricpar se anciditadpour ques s>me formdans noten mmisdirvaretparticjeelwaladebieent s199kaie forrelcrstietait trou"que icmesfralinbat>de jadecigres communebaan charnoes serviqueblescrriaulthee aleusdon&greaire trines "
 
 Ces exemples montrent bien l'incapacité du modèle à produire des sorties cohérentes. Lorsque le modèle fonctionne sur les mots, les sorties semblent plus censées. Le fait de faire fonctionner le modèle sur les subwords montre bien les limites de cet algorithme.
 
