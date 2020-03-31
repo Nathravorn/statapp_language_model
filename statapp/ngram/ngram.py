@@ -101,7 +101,7 @@ class NGramModel:
         return previous_words
     
     
-    def generate_sampled(self, nb_words_to_gen, previous_words, power=1):
+    def generate_sampled(self, nb_words_to_gen, previous_words, temperature=1):
         """Generate a sequence of words starting from given starting words using the sampling method.
         
         Args:
@@ -123,7 +123,7 @@ class NGramModel:
         for i in range(nb_words_to_gen):
             possible_next_words_probas = self.predict_possible_next_words_probas(previous_words)
             cond_probas = list(possible_next_words_probas.values())
-            cond_probas = np.array(cond_probas)**power
+            cond_probas = cond_probas ** (1 / temperature)
             cond_probas = cond_probas / cond_probas.sum()
             possible_next_words = np.array(list(possible_next_words_probas.keys()))
             # Sample a word from conditional distribution
