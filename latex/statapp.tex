@@ -332,7 +332,7 @@ Le Transformer permet, à partir d'un texte en entrée, d'effectuer une traducti
 
 La popularité de ce modèle a conduit à des modèles dérivés tels que 
 BERT (Bidirectional Encoder Representations from Transformers)\cite{devlin2018bert} ou encore GPT-2\cite{radford2019gpt2}.
-Une liste de Transformers est disponible à cette adresse : \href{https://github.com/huggingface/transformers}{github.com/huggingface/transformers}.
+Plusieurs Transformers faisant partis de l'état de l'art sont disponibles à cette adresse : \href{https://github.com/huggingface/transformers}{github.com/huggingface/transformers}.
 
 \subsection{Vue globale}
 
@@ -349,10 +349,23 @@ Voici un schéma de l'allule globale du Transformer :
   \label{fig:transformer}
 \end{figure}
 
+Nous avons suivi l'architecture du Transformer GPT-2\cite{radford2019gpt2} qui est la suivante :
+\begin{figure}[h!]
+  \begin{center}
+  \includegraphics[width=0.33\textwidth]{img/architecture_transformer_gpt2.png}
+  \end{center}
+  \caption{Architecture du Transformer, issu de \og Language Models are Unsupervised Multitask Learners \fg{}\cite{radford2019gpt2}}
+  \label{fig:transformer_gpt2}
+\end{figure}
+
+Nous allons décrire maintenant cette architure.
+
 \subsection{Entrée du Transformer}
 
 En entrée du Transformer se situe une séquence de symboles. Dans l'exemple de la traduction, nous aurons une phrase à traduire.
-Dans le cas où nous souhaitons générer du texte, nous mettrons le début d'une phrase. \\
+Dans le cas où nous souhaitons générer du texte, nous mettrons le début d'une phrase.
+
+\subsubsection{Word Embedding}
 
 Le Transformer, constitué de réseaux de neurones, ne comprend pas une séquence de symboles. Ainsi, les symboles en entrée seront transformés en vecteur
 de nombres pour pouvoir être interprêtable pour les composants du Transformer. Cette technique s'appelle le Word Embedding (ou plongement de mots). \\
@@ -361,21 +374,12 @@ Il existe plusieurs méthodes pour avoir une représentation vectorielle des mot
 Par exemple, le Byte Pair Encoding (BPE)\cite{sennrich2016bpe} proposé en 2016 par Sennrich et al. pour 
 les réseaux de neurones a été utilisé pour le modèle GPT-2\cite{radford2019gpt2}. \\
 
-Nous noterons $\dm$ la taille des vecteurs représentant les mots en entrée du Transformer.
 
-\subsection{Partie Encoder}
+Tous les vecteurs représentant les symboles en entrée du Transformer sont traités en parallèle, 
+ce qui constitue un avantage en terme de calcul par rapport aux RNN. 
 
-La partie gauche de la figure \ref{fig:transformer} est la partie Encoder. Elle est constituée d'une pile de $N$ blocs appelés \og Encoder \fg{}.
-Chaque bloc est constitué de deux couches, à savoir :
-\begin{itemize}
-\item Une Multi-Head Attention
-\item Une Couche de Normalisation
-\end{itemize}
-
-Après le Word Embedding, tous les vecteurs représentant les symboles en entrée du Transformer sont traités en parallèle, 
-ce qui constitue un avantage en terme de calcul contrairement aux RNN. Concrètement, tous les vecteurs sont assemblés sous forme d'une matrice.
-
-Par exemple, dans le cas de $N$ mots, si nous avons une représentation pour chaque mot de la forme : 
+Par exemple, dans le cas de $N$ mots, 
+chaque mot a la représentation vectorielle suivante : 
 
 \[ \forall 1 \leq i \leq N , \, x_i = 
 \begin{pmatrix}
@@ -383,7 +387,7 @@ Par exemple, dans le cas de $N$ mots, si nous avons une représentation pour cha
 \end{pmatrix}
  \]
 
-alors la matrice en entrée est de la forme :
+et la matrice en entrée du Transformer est issue de la concaténation de ces vecteurs. Elle est de la forme :
 \[ X = 
 \begin{pmatrix}
   x_{1,1} & x_{1,2} & \ldots & x_{1,\dm} \\
@@ -393,9 +397,39 @@ alors la matrice en entrée est de la forme :
 \end{pmatrix}
 \]
 
+\subsubsection{Positional Encoding}
+
+Comme expliquée précédemment, les mots sont traités en parallèle à l'entrée du Transformer, ce qui aboutit à un gain de
+temps dans l'entrainement du modèle mais l'information sur l'ordre des mots est pour l'instant perdu. Pour résoudre
+ce problème, chaque mot reçoit de l'information sur son emplacement dans la phrase. Il s'agit du \og positional encoding \fg{}.
+
+Pour coder cette information, les auteurs de \og Attention Is All You Need \fg{} \cite{vaswani2017attention} ont utilisé comme fonctions :
+
+\[ \forall n \in \N, PE(\text{pos}, n) = 
+\begin{cases}
+  \sin\left( \frac{pos}{10 000^{ \frac{2k}{d_\text{model}}}} \right) \text{ si } n = 2k\\
+  \cos\left( \frac{pos}{10 000^{ \frac{2k}{d_\text{model}}}} \right) \text{ si } n = 2k+1 \\
+\end{cases} \]
+
+où \og pos \fg{} est la position du mot dans la phrase et $n$ le numéro de la dimension de la matrice de Word Embedding.
+
+\subsection{Partie Encoder}
+
+Soit $\dm$ la taille des vecteurs représentant les mots en entrée du Transformer.
+
+La partie grise de la figure \ref{fig:transformer} est la partie Encoder. Elle est constituée d'une pile de $N$ blocs appelés \og Encoder \fg{}.
+Chaque bloc est constitué de deux couches, à savoir :
+\begin{itemize}
+\item Une Multi-Head Attention
+\item Une Couche de Normalisation
+\end{itemize}
+
+
 \subsubsection{Multi-Head Attention}
 
 Nous allons commencer par expliquer le calcul d'une seule Attention (aussi appelée Self-Attention) et nous généraliserons aux Multi-Head Attention après. \\
+
+\textbf{Self-Attention} \\
 
 Pour chaque vecteur en entrée, trois autres vecteurs sont calculés. Ces vecteurs sont nommés \og Query, Key et Value \fg{}.
 Ces trois vecteurs vont permettre de calculer \textbf{l'Attention}.
@@ -410,30 +444,32 @@ Supposons $N$ vecteurs d'entrés. Ils sont calculés à partir des produits matr
   v_i = x_i \cdot W^V \\
   \end{cases}  \]
 
-Comme avec le vecteur $X$ représentant tous les vecteurs en entrée du Transformer, 
-on définit $Q$, $K$ et $V$ comme les matrices constituées respectivement des vecteurs $q_i$, $k_i$ et $v_i$.
+On définit $Q$, $K$ et $V$ comme les matrices constituées respectivement des vecteurs $q_i$, $k_i$ et $v_i$.
 Cela revient aux calculs suivants :
 
 \[ Q = X \cdot W^Q  \]
 \[ K = X \cdot W^K  \]
 \[ V = X \cdot W^V  \]
 
-L'Attention, telle que défini dans l'article \cite{vaswani2017attention} est calculé matriciellement par :
+L'Attention, telle que définie dans l'article \cite{vaswani2017attention}, est calculée matriciellement par :
 
 \[ \text{softmax}\left( \frac{Q \cdot K^T}{\sqrt{d_k}} \right) V \]
 
 Ainsi, chaque vecteur en entrée se voit attribuer un \og score \fg{} d'Attention. Le score du vecteur $x_i$ dépend de $x_i$ mais 
 aussi des autres $x_j$ pour $1 \leq i \neq j \leq N$. Cependant, la dépendance du score de $x_i$ est parfois si forte que les
 dépendances issues des vecteurs $x_j$ sont négligeables, ce qui n'est pas souhaitable, car nous souhaitons
-conserver ces autres dépendances. Par exemple, c'est le cas d'un pronom relatif (comme \og Il \fg{}) qui doit se référer 
+conserver ces autres dépendances. Par exemple, c'est le cas d'un pronom relatif (comme \og Elle \fg{}) qui doit se référer 
 à un autre mot dans la phrase (ici, son sujet). \\
 
+\textbf{Multi-Head Attention} \\
 
-Pour palier ce problème, nous utilisons la Multi-Head Attention. Il s'agit d'effectuer plusieurs fois la Self-Attention
-mais avec d'autres matrices $W_h^Q, W_h^K$ et $W_h^V$ pour $1 \leq h \leq H$, où $H$ le nombre de Attention Head.
 
-Si nous notons $Z_h$ les matrices issues de chaque calcul de Self Attention, nous obtenons $H$ matrices. Nous concaténons
-ces matrices et nous les mutliplions avec une autre matrice de poids $W^O$, ce qui donne le calcul suivant :
+Pour palier ce problème, nous utilisons la Multi-Head Attention. Il s'agit d'effectuer plusieurs fois la Self-Attention. Si
+nous avons $H$ le nombre de Attention Head, pour chaque calcul de Self-Attention, nous avons les matrices
+$W_h^Q, W_h^K$ et $W_h^V$ pour $1 \leq h \leq H$, .
+
+Notons pour tout $1 \leq h \leq H, \, Z_h$ les matrices issues de chaque calcul de Self-Attention. Nous concaténons
+ces $H$ matrices et nous les multiplions avec une autre matrice de poids $W^O$, ce qui donne le calcul suivant :
 
 \[  \begin{pmatrix}
     Z_1 & Z_2 & \ldots & Z_H
@@ -441,11 +477,30 @@ ces matrices et nous les mutliplions avec une autre matrice de poids $W^O$, ce q
   \cdot W^O = Z \]
 
 
-Cette dernière matrice, notée $Z$, subit une normalisation puis est transmise à la couche suivante qui est un Feed Forward Neural Network (FFNN).
-La sortie du FFNN est aussi normalisée. \\
+Cette dernière matrice, notée $Z$, subit une normalisation. Cette normalisation est effectuée dans la 
+couche \og Add \& Norm \fg{} (voir figure \ref{cite:transformer_gpt2}).
+La sortie de cette couche est transmise à un Feed Forward Neural Network (FFNN).
+La sortie du FFNN est, elle aussi, normalisée. \\
 
-Ainsi, chaque bloc d'Encoder produit une sortie pour chaque entrée reçue. Cette sortie est transmise au bloc d'Encoder suivant.
-Cette procédure est effectuée $N$ fois. \\
+Ainsi, chaque bloc d'Encoder produit une sortie pour chaque entrée reçue. 
+Cette sortie est transmise au bloc d'Encoder suivant. \\
+
+Cette procédure est effectuée $N$ fois.
+
+
+\subsubsection{Sortie du Transformer}
+
+
+Un vecteur final est issu des blocs d'Encoder. Ce vecteur est projeté dans un espace de dimension la taille du vocabulaire,
+à l'aide du Linear layer. Nous obtenons alors le vecteur \og logit \fg{}. Ce vecteur correspond aux scores associés
+à chaque mot du vocabulaire.
+
+Enfin, ces valeurs sont transformés en probabilités à l'aide de la couche softmax. Ainsi, le vecteur final est un
+vecteur qui associe pour chaque mot une probabilité. Ce mot est retrouvé grâce à la fonction d'embedding
+utilisée en entrée du Transformer.
+
+
+\subsubsection{Exemple de valeurs pour les hyperparamètres}
 
 Dans l'article \og Attention Is All You Need \fg{} \cite{vaswani2017attention}, les valeurs prises sont :
 
@@ -455,12 +510,6 @@ Dans l'article \og Attention Is All You Need \fg{} \cite{vaswani2017attention}, 
   \item $\dm = 512$
   \item $d_k = d_v = \dm/H = 64$
 \end{itemize}
-
-
-\subsection{Partie Decoder}
-
-La partie droite de la figure \ref{fig:transformer} est la partie Decoder.
-\subsection{Sortie du Transformer}
 
 
 \hypertarget{expuxe9riences}{%
