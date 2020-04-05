@@ -101,7 +101,7 @@ class NGramModel:
         return previous_words
     
     
-    def generate_sampled(self, nb_words_to_gen, previous_words,temperature=1):
+    def generate_sampled(self, nb_words_to_gen, previous_words, temperature=1):
         """Generate a sequence of words starting from given starting words using the sampling method.
         
         Args:
