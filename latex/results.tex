@@ -68,11 +68,11 @@ Dans le cas du transformer, nous avons choisi d'utiliser les deux
 et \textbf{tensorflow}, afin de nous permettre d'apprendre à connaître
 les deux.
 
-Dans les deux cas, nous avons utilisé pour encoder les mots la méthode
-des Subwords, avec une taille de vocabulaire de 1000.
-
 \hypertarget{ruxe9sultats}{%
-\subsection{Résultats}\label{ruxe9sultats}}
+\subsection{Résultats TensorFlow (Subword Encoding)}\label{ruxe9sultats}}
+
+Dans le cas de TensorFlow, nous avons utilisé pour encoder les mots la méthode
+des Subwords, avec une taille de vocabulaire de 1000.
 
 \hypertarget{n-gram}{%
 \subsubsection{N-Gram}\label{n-gram}}
@@ -261,3 +261,175 @@ encourager le réalisme des sorties, mais pas leur diversité.
 Il est plus surprenant qu'il arrive dans le cas de ce modèle. C'est un
 cas clair d'\emph{underfitting} qui montre que le modèle pourrait
 bénéficier d'un temps d'entraînement plus long.
+
+\hypertarget{ruxe9sultatspytorch}{%
+\subsection{Résultats PyTorch (Word Encoding)}\label{ruxe9sultats}}
+
+Le Transformer codé en TensorFlow et décrit précédemment utilise les Subwords comme méthode d’encodage. Une approche différente a été choisie pour le développement du Transformer en PyTorch. En effet, celui-ci exploite comme encodage des mots entiers (Word Level). De la même manière, le modèle n-gram décrit dans la suite sera basé sur une représentation des mots entiers pour avoir un élément de comparaison cohérent.
+
+Le vocabulaire utilisé par les modèles n-gram et le modèle transformer est le même : il correspond aux 30.000 mots les plus fréquents dans les données d'entraînement.
+
+Une telle taille de vocabulaire permet de couvrir suffisamment de mots du langage courant (avec quelques éléments propres à Wikipedia comme une plus grande utilisation de dates). Néanmoins, cette taille de vocabulaire accroît considérablement la taille du transformer par rapport à un modèle basé sur les Subwords (vocabulaire de quelques milliers de subwords), ce qui rend l’apprentissage plus long. Il y a un arbitrage à trouver entre meilleure représentation de la langue et temps d’apprentissage plus long.
+
+Les calculs de perplexités sont effectués sur les mêmes données après avoir entraîné le modèle transformer comme les modèles n-gram sur les mêmes textes.
+
+\hypertarget{n-gram}{%
+\subsubsection{N-Gram}\label{n-gram}}
+
+\hypertarget{performance-quantitative}{%
+\paragraph{Performance quantitative}\label{performance-quantitative}}
+
+Les perplexités obtenues par le modèle n-gram sont, en fonction du
+paramètre n:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{n=2}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \texttt{train}: \(79.6\)
+  \item
+    \texttt{test}: \(89.1\)
+  \end{itemize}
+\item
+  \texttt{n=3}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \texttt{train}: \(23.9\)
+  \item
+    \texttt{test}: \(98.8\)
+  \end{itemize}
+\item
+  \texttt{n=4}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \texttt{train}: \(6.2\)
+  \item
+    \texttt{test}: \(323.3\)
+  \end{itemize}
+\end{itemize}
+
+De la même manière que dans le cas du Subwords encoding précédent, on voit que si les performances sur les données d'entrainement augmentent avec n, les performances sur les données de tests suivent une tendance inverse. Les modèles ont clairement surappris pour n>2. 
+
+\hypertarget{performance-qualitative}{%
+\paragraph{Performance qualitative}\label{performance-qualitative}}
+
+Voici quelques extraits générés par le meilleur modèle n-gram parmi les précédents, soit pour n=2.
+
+Génération Greedy :
+
+\begin{verbatim}
+"A l'age de 5 ans , elle invente" -> " par le <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> ,"
+\end{verbatim}
+
+Génération Sample (top_k=5) :
+
+La génération sample évite les boucles et réduit les problèmes d'overfitting, comme expliqué plus haut dans ce rapport.
+
+\begin{verbatim}
+"A l'age de 5 ans , elle invente" -> "l et a l ' ete un monument aux mains nues ( v. smith et <unk> est , par un ecrivain et blanchiment d ' eglise est l ' ukraine alimente l ' experience de poursuite penale . huit des carottes de mettre en 1536 . en effet stereo hearts , elle etait de sensibilisation du championnat du capitaine de bilan ) consacre a <unk> <unk> ( en 1212 christian <unk> , <unk> tt devait permettre de zurich en france des municipales de marseille . achille sur un poste de <unk> et petit-fils mineur pour inspecter le danemark publie en 2008 "
+\end{verbatim}
+
+Génération Sample (top_k=5) sans le caractère <unk> :
+
+Malgré une taille de vocabulaire de 30.000, le nombre de mots qui n’appartiennent pas au vocabulaire reste très important et le modèle tend donc à attribuer une probabilité relativement forte au token <unk> associé à ces mots. Pour y remédier au moment de générer un texte qui fasse sens, on peut simplement mettre à zéro le poids associé à ce token, comme nous l’avons fait pour la génération ci-dessous :
+
+\begin{verbatim}
+"A l'age de 5 ans , elle invente" -> " a venir ;)"
+\end{verbatim}
+
+\hypertarget{transformer}{%
+\subsubsection{Transformer}\label{transformer}}
+
+\hypertarget{hyperparametres}{%
+\paragraph{Hyperparamètres}\label{hyperparametres}}
+
+Notre modèle a pour hyperparamètres :
+\begin{itemize}
+\tightlist
+\item
+  \(N = 2\)
+\item
+  \(d_{model} = 64\)
+\item
+  \(H = 8\)
+\item
+  \(max_length = 8\)
+\item
+  \(vocab\_size = 30 000\)
+\item
+  \texttt{ff\_hidden\_size} \$ = 256\$
+\item
+  \texttt{n\_epochs} \$ = 4\$
+\item
+  Optimizer: Adam
+\item
+  \texttt{learning\_rate} \$ = 0.01 \$
+\item
+  \texttt{batch\_size} \$ = 512 \$
+\end{itemize}
+
+Le code a été écrit de manière à pouvoir l’exécuter sur GPU. La mémoire de notre carte graphique (une GTX 1050) étant insuffisante pour un modèle basé sur un vocabulaire supérieur à 20.000 mots, nous avons eu recours à Google Colab.
+
+Nous avons entraîné le transformer sur 90\% du dataset sur 6 epochs en enregistrant le modèle à chaque epoch parcourue. L'entraînement sur une epoch dure une quarantaine de minutes.
+
+L’erreur de test la plus faible a été obtenue pour le modèle entraîné sur 4 epochs.
+
+\hypertarget{performance-quantitative-1}{%
+\paragraph{Performance quantitative}\label{performance-quantitative-1}}
+
+La perplexité obtenue par le Transformer est :
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{train}: \(27.7\)
+\item
+  \texttt{test}: \(26.4\)
+\end{itemize}
+
+On peut faire des observations similaires au modèle TensorFow :
+
+La perplexité n'est pas meilleure sur le training set que sur
+le test set, ce qui confirme l'absence d'\emph{overfitting} à laquelle
+on pouvait s'attendre étant donnée la taille importante du jeu de
+données et le petit nombre d'epochs d'entraînement.
+
+Sur le test set, elle est bien inférieure à la
+meilleure perplexité des modèles n-gram, ce qui confirme ce
+à quoi l'on pouvait s'attendre : que le modèle Transformer est capable
+de modéliser le langage naturel bien mieux que le modèle naïf qu'est
+n-gram.
+
+\hypertarget{performance-qualitative-1}{%
+\paragraph{Performance qualitative}\label{performance-qualitative-1}}
+
+\hypertarget{exemples}{%
+\subparagraph{Exemples}\label{exemples}}
+
+Génération Greedy :
+
+\begin{verbatim}
+"A l'age de 5 ans , elle invente" ->  “de la <unk> . il est aussi un homme politique francais de la ville de <unk> . il est nomme en <unk> , le <unk> et le <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk>”
+\end{verbatim}
+
+Génération Sample (top_k=5):
+
+\begin{verbatim}
+"A l'age de 5 ans , elle invente" -> “des `` <unk> `` . le film est un homme politique allemand de <unk> et la region de <unk> . le premier album du monde de la <unk> , il s ' agit d ' une nouvelle part entiere de la ville de <unk> . il est classe par des autres nations unies , qui est un footballeur international francais de l ' academie de l ' art de <unk> , en particulier , il devient membre de la <unk> et le <unk> et les <unk> . il se presente dans la meme ecole d ' art , le roi”
+\end{verbatim}
+
+Génération Sample (top_k=5) sans le caractère <unk> :
+
+\begin{verbatim}
+"A l'age de 5 ans , elle invente" -> “de la ville de montreal . il est nomme au cours du mois de septembre 2017 , le premier tour d ' art et de l ' universite de la ville de lyon . le groupe est le `` grand prix `` . en 2007 , les deux premieres mentions et des autres communes d ' un nouveau record du monde de l ' equipe de l ' equipe du monde de hockey . le film , la commune se situe dans le departement de la province de l ' ouest ( `` `` ) et `` de `` ,”
+\end{verbatim}
+
+Ici encore, bien qu'elles ne fassent pas sens sur le long terme, les générations du transformer sont plus construites, suivent davantage les règles syntaxiques que les générations des modèles n-gram.
