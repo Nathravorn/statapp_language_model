@@ -8,7 +8,7 @@
 \fancypagestyle{theme}{
 \fancyhead[L]{}
 \fancyhead[R]{ENSAE}
-\fancyhead[C]{Modèle de langues neuronaux} 
+\fancyhead[C]{Modèle de langues neuronaux}
 \fancyfoot[C]{\thepage}
 \fancyfoot[R]{}
 \fancyfoot[L]{2019-2020}
@@ -95,7 +95,7 @@ On définit les $(X_n)_{n \in \N^*}$ comme :
 
 $\forall i \in \N^*, X_i(T) = \begin{cases}
   i\text{-ème symbole de } T \text{ si } i \leq L(T) \\
-  \varepsilon \text{ si } i > L(T) 
+  \varepsilon \text{ si } i > L(T)
 \end{cases}$
 
 \vspace{0.4cm}
@@ -107,7 +107,7 @@ On appelle $\widehat{\P}$ un modèle de langue. En raison de la nature séquenti
 
 
 \subsubsection{Construction d'un modèle de langue par probabilités conditionnelles}
-Soit un texte $T=s_1\ldots s_L \in V^L$, où $L \in\N^*$. 
+Soit un texte $T=s_1\ldots s_L \in V^L$, où $L \in\N^*$.
 
 La probabilité d'observer $T$ s'écrit :
 \begin{align*}
@@ -116,7 +116,7 @@ La probabilité d'observer $T$ s'écrit :
   &= \P(X_1 = s_1 \cap \ldots \cap X_L = s_L \cap X_{L+1} = \varepsilon) \\
   &= \P(X_{L+1}=\varepsilon \vert X_1=s_1,\ldots, X_L=s_L)\P(X_1=s_1,\ldots, X_L=s_L) \\
   &= \P(X_{L+1}=\varepsilon \vert X_1=s_1,\ldots, X_L=s_L)\P(X_L=s_L\vert X_1=s_1,\ldots, X_{L-1}=s_{L-1}) \times \\
-  & \hspace{9cm}\P(X_1=s_1 ,\ldots, X_{L-1}=s_{L-1}) \\ 
+  & \hspace{9cm}\P(X_1=s_1 ,\ldots, X_{L-1}=s_{L-1}) \\
   &=\prod_{i=1}^{L+1} \P(X_i=s_i \vert X_1=s_1,\ldots, X_{i-1}=s_{i-1}) \text{ en posant } s_{L+1} = \varepsilon
 \end{align*}
 
@@ -144,7 +144,7 @@ Dans un modèle $n$-gram, nous faisons l'hypothèse simplificatrice que la proba
   \item Cas $n > 3$ : Modèle $n$-gram : $\P(T) = \prod_{i=1}^{L+1} \P(X_i = s_i\vert X_{i-(n-1)} = s_{i-(n-1)}, \ldots, X_{i-1} = s_{i-1})$
 \end{itemize}
 
-Nous estimons ces probabilités sur un corpus de textes et nous supposons que le corpus de textes reflète la langue dans l'absolu, 
+Nous estimons ces probabilités sur un corpus de textes et nous supposons que le corpus de textes reflète la langue dans l'absolu,
 ce qui sera le cas si nous disposons d'un très grand corpus de textes . Il s'agit là d'une approche statistique.
 
 Etant donné que nous travaillons sur un corpus de textes fini, nous utilisons naturellement pour probabilité la mesure de comptage. Ainsi, le calcul de probabilité conditionnelle devient :
@@ -158,7 +158,7 @@ Pour pallier ce problème et pouvoir généraliser à des séquences de mots non
 
 \subsection{Modèle Neural Network}
 
-Une approche permettant d'opérer un lissage des probabilités est l'utilisation de réseaux de neurones. 
+Une approche permettant d'opérer un lissage des probabilités est l'utilisation de réseaux de neurones.
 Leur capacité à la généralisation leur permet de mieux estimer les probabilités de séquences rarement observées telles que les longues séquences où celles contenant des symboles rares.
 L'idée est de capturer les liens (ou caractéristiques) que les mots peuvent avoir entre eux. Ces liens sont représentés par les différentes connexions qui existent entre les neurones du réseau.
 On parle de \og représentation distribuée \fg{}. \\
@@ -234,10 +234,10 @@ echantillons = [[s1...sn],...,[s1...sn]]
 probabilites = [1,...,1]
 for i in [n+1...L]:
     for j in [1,...,k]:
-        Calculer les probabilités conditionnelles de tous les mots possibles 
+        Calculer les probabilités conditionnelles de tous les mots possibles
         sachant l'échantillon j
         Calculer les probabilités de l'échantillon agrégé de chaque mot possible
-    Stocker dans echantillons les k echantillons obtenus ayant les plus 
+    Stocker dans echantillons les k echantillons obtenus ayant les plus
         grandes probabilites
     Stocker dans probabilites les probabilités associées
 return echantillons
@@ -266,27 +266,27 @@ return echantillon
 
 \section{Mesure de performance}
 
-Afin d’évaluer si un modèle de langue est bon, nous devons définir une métrique qui rende 
+Afin d’évaluer si un modèle de langue est bon, nous devons définir une métrique qui rende
 compte de ses performances.
-Dans le cadre de notre problème, un modèle est meilleur qu’un autre si étant donné une 
+Dans le cadre de notre problème, un modèle est meilleur qu’un autre si étant donné une
 suite de mots, il attribue une plus grande probabilité au mot suivant réel.  \\
 
 Dans les tâches de NLP, la \og perplexité \fg{} est une façon d’évaluer les modèles de langues.
-Il s'agit d'une mesure empruntée à la théorie de l'information, qui permet d'évaluer la 
+Il s'agit d'une mesure empruntée à la théorie de l'information, qui permet d'évaluer la
 performance d'une distribution de probabilité ou d'un modèle probabiliste à prédire un échantillon.
 
 \subsection{Perplexité}
 
 
 La perplexité repose sur la notion d’entropie.
-Initialement l’entropie a été définie dans le contexte de la thermodynamique, 
-mais elle est également utilisée en Machine Learning suivant la 
+Initialement l’entropie a été définie dans le contexte de la thermodynamique,
+mais elle est également utilisée en Machine Learning suivant la
 définition de Shannon dans la théorie de l’information.
 
-La self-information $I(x)$ est la quantité d’information apportée par la réalisation de 
-l’évènement $\{X=x\}$, où $X$ est une variable aléatoire. On peut également la définir 
-comme la quantité de \og surprise \fg{} résultant de l’évènement $\{X=x\}$. Lorsqu’un évènement de 
-faible probabilité se produit, il apporte plus d’information/de surprise 
+La self-information $I(x)$ est la quantité d’information apportée par la réalisation de
+l’évènement $\{X=x\}$, où $X$ est une variable aléatoire. On peut également la définir
+comme la quantité de \og surprise \fg{} résultant de l’évènement $\{X=x\}$. Lorsqu’un évènement de
+faible probabilité se produit, il apporte plus d’information/de surprise
 qu’un évènement plus probable.
 
 \begin{definition}
@@ -326,17 +326,17 @@ La perplixité d'un modèle probabiliste $p$ est définie par :
 \section{Transformer}
 
 Le \og Transformer \fg{} est un modèle de deep learning dans le domaine du Traitement automatique du langage naturel (Natural Language Processing en anglais, abrégé NLP)
-introduit en 2017 dans l'article \og Attention Is All You Need \fg{}\cite{vaswani2017attention}. 
-Il vient apporter une amélioration à ce qui était fait jusqu'à présent avec les RNN (Recurrent Neural Network). 
+introduit en 2017 dans l'article \og Attention Is All You Need \fg{}\cite{vaswani2017attention}.
+Il vient apporter une amélioration à ce qui était fait jusqu'à présent avec les RNN (Recurrent Neural Network).
 Le Transformer permet, à partir d'un texte en entrée, d'effectuer une traduction, un résumé ou encore de la génération de texte. \\
 
-La popularité de ce modèle a conduit à des modèles dérivés tels que 
+La popularité de ce modèle a conduit à des modèles dérivés tels que
 BERT (Bidirectional Encoder Representations from Transformers)\cite{devlin2018bert} ou encore GPT-2\cite{radford2019gpt2}.
 Plusieurs Transformers faisant partis de l'état de l'art sont disponibles à cette adresse : \href{https://github.com/huggingface/transformers}{github.com/huggingface/transformers}.
 
 \subsection{Vue globale}
 
-Comme expliqué en introduction, les RNN s'adaptent mal avec des séquences d'une grande longueur. 
+Comme expliqué en introduction, les RNN s'adaptent mal avec des séquences d'une grande longueur.
 L'architecture générale du Transformer permet une meilleure parallélisation de l'apprentissage et utilise un autre mécanisme appelé \og l'Attention \fg{} qui permet
 de conserver une dépendance entre l'entrée et la sortie du Transformer.
 
@@ -370,25 +370,25 @@ Dans le cas où nous souhaitons générer du texte, nous mettrons le début d'un
 Le Transformer, constitué de réseaux de neurones, ne comprend pas une séquence de symboles. Ainsi, les symboles en entrée seront transformés en vecteur
 de nombres pour pouvoir être interprêtable pour les composants du Transformer. Cette technique s'appelle le Word Embedding (ou plongement de mots). \\
 
-Il existe plusieurs méthodes pour avoir une représentation vectorielle des mots. 
-Par exemple, le Byte Pair Encoding (BPE)\cite{sennrich2016bpe} proposé en 2016 par Sennrich et al. pour 
+Il existe plusieurs méthodes pour avoir une représentation vectorielle des mots.
+Par exemple, le Byte Pair Encoding (BPE)\cite{sennrich2016bpe} proposé en 2016 par Sennrich et al. pour
 les réseaux de neurones a été utilisé pour le modèle GPT-2\cite{radford2019gpt2}. \\
 
 
-Tous les vecteurs représentant les symboles en entrée du Transformer sont traités en parallèle, 
-ce qui constitue un avantage en terme de calcul par rapport aux RNN. 
+Tous les vecteurs représentant les symboles en entrée du Transformer sont traités en parallèle,
+ce qui constitue un avantage en terme de calcul par rapport aux RNN.
 
-Par exemple, dans le cas de $N$ mots, 
-chaque mot a la représentation vectorielle suivante : 
+Par exemple, dans le cas de $N$ mots,
+chaque mot a la représentation vectorielle suivante :
 
-\[ \forall 1 \leq i \leq N , \, x_i = 
+\[ \forall 1 \leq i \leq N , \, x_i =
 \begin{pmatrix}
   x_{i,i} & x_{i,2} & \ldots & x_{i,\dm}
 \end{pmatrix}
  \]
 
 et la matrice en entrée du Transformer est issue de la concaténation de ces vecteurs. Elle est de la forme :
-\[ X = 
+\[ X =
 \begin{pmatrix}
   x_{1,1} & x_{1,2} & \ldots & x_{1,\dm} \\
   x_{2,2} & x_{2,2} & \ldots & x_{2,\dm} \\
@@ -405,7 +405,7 @@ ce problème, chaque mot reçoit de l'information sur son emplacement dans la ph
 
 Pour coder cette information, les auteurs de \og Attention Is All You Need \fg{} \cite{vaswani2017attention} ont utilisé comme fonctions :
 
-\[ \forall n \in \N, PE(\text{pos}, n) = 
+\[ \forall n \in \N, PE(\text{pos}, n) =
 \begin{cases}
   \sin\left( \frac{pos}{10 000^{ \frac{2k}{d_\text{model}}}} \right) \text{ si } n = 2k\\
   \cos\left( \frac{pos}{10 000^{ \frac{2k}{d_\text{model}}}} \right) \text{ si } n = 2k+1 \\
@@ -455,10 +455,10 @@ L'Attention, telle que définie dans l'article \cite{vaswani2017attention}, est 
 
 \[ \text{softmax}\left( \frac{Q \cdot K^T}{\sqrt{d_k}} \right) V \]
 
-Ainsi, chaque vecteur en entrée se voit attribuer un \og score \fg{} d'Attention. Le score du vecteur $x_i$ dépend de $x_i$ mais 
+Ainsi, chaque vecteur en entrée se voit attribuer un \og score \fg{} d'Attention. Le score du vecteur $x_i$ dépend de $x_i$ mais
 aussi des autres $x_j$ pour $1 \leq i \neq j \leq N$. Cependant, la dépendance du score de $x_i$ est parfois si forte que les
 dépendances issues des vecteurs $x_j$ sont négligeables, ce qui n'est pas souhaitable, car nous souhaitons
-conserver ces autres dépendances. Par exemple, c'est le cas d'un pronom relatif (comme \og Elle \fg{}) qui doit se référer 
+conserver ces autres dépendances. Par exemple, c'est le cas d'un pronom relatif (comme \og Elle \fg{}) qui doit se référer
 à un autre mot dans la phrase (ici, son sujet). \\
 
 \textbf{Multi-Head Attention} \\
@@ -477,12 +477,12 @@ ces $H$ matrices et nous les multiplions avec une autre matrice de poids $W^O$, 
   \cdot W^O = Z \]
 
 
-Cette dernière matrice, notée $Z$, subit une normalisation. Cette normalisation est effectuée dans la 
+Cette dernière matrice, notée $Z$, subit une normalisation. Cette normalisation est effectuée dans la
 couche \og Add \& Norm \fg{} (voir figure \ref{cite:transformer_gpt2}).
 La sortie de cette couche est transmise à un Feed Forward Neural Network (FFNN).
 La sortie du FFNN est, elle aussi, normalisée. \\
 
-Ainsi, chaque bloc d'Encoder produit une sortie pour chaque entrée reçue. 
+Ainsi, chaque bloc d'Encoder produit une sortie pour chaque entrée reçue.
 Cette sortie est transmise au bloc d'Encoder suivant. \\
 
 Cette procédure est effectuée $N$ fois.
@@ -579,9 +579,9 @@ algorithmes.
 
 Dans le cas du transformer, nous avons choisi d'utiliser les deux
 \emph{frameworks} majeurs de Deep Learning en Python: \textbf{PyTorch}
-et \textbf{Tensorflow}. Les deux ont leurs avantages et leurs inconvénients 
-mais tous deux sont intéressants à connaître. Plutôt que d’en choisir un, 
-nous avons donc décidé de nous séparer en deux équipes et de coder le 
+et \textbf{Tensorflow}. Les deux ont leurs avantages et leurs inconvénients
+mais tous deux sont intéressants à connaître. Plutôt que d’en choisir un,
+nous avons donc décidé de nous séparer en deux équipes et de coder le
 modèle deux fois, une fois pour chacun des deux outils.
 
 Dans les deux cas, nous avons utilisé pour encoder les mots la méthode
@@ -640,8 +640,8 @@ Pour référence :
 \end{itemize}
 
 Ainsi, le nombre de degrés de liberté du modèle atteint le même ordre
-de grandeur que le nombre de tokens dans le jeu de données (un critère 
-approximatif du potentiel d'\emph{overfitting}) dès \(n=3\), ce qui 
+de grandeur que le nombre de tokens dans le jeu de données (un critère
+approximatif du potentiel d'\emph{overfitting}) dès \(n=3\), ce qui
 confirme ce que l'on observe.
 
 Ceci explique pourquoi, en pratique (par exemple dans le cas des modèles
@@ -734,13 +734,13 @@ n-gram. \\
 \noindent{}\ding{112} \texttt{Température de 0.2}
 
 \begin{quotation}
-"A l'age de 5 ans , elle invente" $\rightarrow$ " , il est nomme chef de la ville de saint-denis de la hauteur de saint-maurice en 1891 ... il est nomme directeur general de la commission de l' eglise saint-martin de 1924 a 1938 . il est elu au conseil de l' eglise saint-germain-de-compostelle , puis en 1935"
+"A l'age de 5 ans , elle invente" $\rightarrow$ " , a l' age de 10 ans , ou elle est reglee a l' universite de l' universite de paris , et a la suite de la somme de la ville de saint-denis , et a la suite de la fusion de l' universite de montreal . elle est elue a la suite de la saison 2015-2017 et est en finale par la ligue "
 \end{quotation}
 
 \noindent{}\ding{112} \texttt{Température de 4}
 
 \begin{quotation}
-"A l'age de 5 ans , elle invente" $\rightarrow$ " , le village est construit dans un climat , qui a une partie . le labore d\' un batail est d\' ailles pour les envictions : les arabes de poivres , le lac-sur-lexical ( " " " ; le nom " , le palais ) " ..) .avec les deux autres ( la peninsule ) , les hauts ou la co"
+" ( 1901 ) .-260 et se retire - la capable des etats de lyonnaise du quet , et la france , en italie , dans les colonistantes du congregage , au sud et au nordis le terroie de montpelles , et la reine du royaume de maugunchane a ete fondee en 1948 . il y ava"
 \end{quotation}
 
 La qualité des sorties est plutôt bonne. La température produit l'effet
