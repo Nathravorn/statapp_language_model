@@ -537,39 +537,6 @@ tous les caractères sont en minuscules, et les mots et les signes de
 ponctuation sont séparés (en anglais, ce traitement s'appelle la
 \textit{tokenization} d'un texte).
 
-\hypertarget{algorithmes-et-hyperparamuxe8tres}{%
-\subsection{Algorithmes et
-hyperparamètres}\label{algorithmes-et-hyperparamuxe8tres}}
-
-Nous avons implémenté l'algorithme \textbf{n-gram} en faisant varier $n$.
-
-Nous avons également implémenté l'algorithme du Transformer avec pour
-hyperparamètres :
-
-\begin{itemize}
-%\tightlist
-\item
-  \(N = 3\)
-\item
-  \(d_{model} = 512\)
-\item
-  \(H = 16\)
-\item
-  \texttt{ff\_hidden\_size} $ = 512$
-\item
-  \texttt{n\_epochs} $ = 3$
-\item
-  Optimizer: Adam
-\item
-  \texttt{learning\_rate} $ = 0.001 $
-\item
-  \texttt{batch\_size} $ = 128$
-\end{itemize}
-
-La \texttt{batch\_size} a été choisie pour saturer la mémoire de la
-carte graphique utilisée.
-
-L'entraînement a pris 6 heures sur une carte graphique GTX 1070.
 
 \subsection{Implémentation}
 
@@ -690,6 +657,35 @@ subwords montre bien les limites de cet algorithme.
 \hypertarget{transformer}{%
 \subsubsection{Transformer}\label{transformer}}
 
+\paragraph{Hyperparamètres}
+
+Notre modèle a pour hyperparamètres :
+
+\begin{itemize}
+%\tightlist
+\item
+  \(N = 3\)
+\item
+  \(d_{model} = 512\)
+\item
+  \(H = 16\)
+\item
+  \texttt{ff\_hidden\_size} $ = 512$
+\item
+  \texttt{n\_epochs} $ = 3$
+\item
+  Optimizer: Adam
+\item
+  \texttt{learning\_rate} $ = 0.001 $
+\item
+  \texttt{batch\_size} $ = 128$
+\end{itemize}
+
+La \texttt{batch\_size} a été choisie pour saturer la mémoire de la
+carte graphique utilisée.
+
+L'entraînement a pris 6 heures sur une carte graphique GTX 1070.
+
 \noindent{}\textbf{Performance quantitative}
 
 La perplexité obtenue par le Transformer est :
@@ -762,6 +758,8 @@ encourager le réalisme des sorties, mais pas leur diversité.
 Il est plus surprenant qu'il arrive dans le cas de ce modèle. C'est un
 cas clair d'\textit{underfitting} qui montre que le modèle pourrait
 bénéficier d'un temps d'entraînement plus long.
+
+\newpage
 
 \subsection{Résultats PyTorch (Word Encoding)}
 
