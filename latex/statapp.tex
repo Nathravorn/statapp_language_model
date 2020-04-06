@@ -271,7 +271,7 @@ compte de ses performances.
 Dans le cadre de notre problème, un modèle est meilleur qu’un autre si étant donné une
 suite de mots, il attribue une plus grande probabilité au mot suivant réel.  \\
 
-Dans les tâches de NLP, la \og perplexité \fg{} est une façon d’évaluer les modèles de langues.
+Dans les tâches de NLP, la \textit{perplexité} est une façon d’évaluer les modèles de langues.
 Il s'agit d'une mesure empruntée à la théorie de l'information, qui permet d'évaluer la
 performance d'une distribution de probabilité ou d'un modèle probabiliste à prédire un échantillon.
 
@@ -325,7 +325,7 @@ La perplixité d'un modèle probabiliste $p$ est définie par :
 
 \section{Transformer}
 
-Le \og Transformer \fg{} est un modèle de deep learning dans le domaine du Traitement automatique du langage naturel (Natural Language Processing en anglais, abrégé NLP)
+Le \textit{Transformer} est un modèle de deep learning dans le domaine du Traitement automatique du langage naturel (Natural Language Processing en anglais, abrégé NLP)
 introduit en 2017 dans l'article \og Attention Is All You Need \fg{}\cite{vaswani2017attention}.
 Il vient apporter une amélioration à ce qui était fait jusqu'à présent avec les RNN (Recurrent Neural Network).
 Le Transformer permet, à partir d'un texte en entrée, d'effectuer une traduction, un résumé ou encore de la génération de texte. \\
@@ -337,7 +337,7 @@ Plusieurs Transformers faisant partis de l'état de l'art sont disponibles à ce
 \subsection{Vue globale}
 
 Comme expliqué en introduction, les RNN s'adaptent mal avec des séquences d'une grande longueur.
-L'architecture générale du Transformer permet une meilleure parallélisation de l'apprentissage et utilise un autre mécanisme appelé \og l'Attention \fg{} qui permet
+L'architecture générale du Transformer permet une meilleure parallélisation de l'apprentissage et utilise un autre mécanisme appelé \textit{l'Attention} qui permet
 de conserver une dépendance entre l'entrée et la sortie du Transformer.
 
 Voici un schéma de l'allule globale du Transformer :
@@ -401,7 +401,7 @@ et la matrice en entrée du Transformer est issue de la concaténation de ces ve
 
 Comme expliquée précédemment, les mots sont traités en parallèle à l'entrée du Transformer, ce qui aboutit à un gain de
 temps dans l'entrainement du modèle mais l'information sur l'ordre des mots est pour l'instant perdu. Pour résoudre
-ce problème, chaque mot reçoit de l'information sur son emplacement dans la phrase. Il s'agit du \og positional encoding \fg{}.
+ce problème, chaque mot reçoit de l'information sur son emplacement dans la phrase. Il s'agit du \textit{positional encoding}.
 
 Pour coder cette information, les auteurs de \og Attention Is All You Need \fg{} \cite{vaswani2017attention} ont utilisé comme fonctions :
 
@@ -411,13 +411,13 @@ Pour coder cette information, les auteurs de \og Attention Is All You Need \fg{}
   \cos\left( \frac{pos}{10 000^{ \frac{2k}{d_\text{model}}}} \right) \text{ si } n = 2k+1 \\
 \end{cases} \]
 
-où \og pos \fg{} est la position du mot dans la phrase et $n$ le numéro de la dimension de la matrice de Word Embedding.
+où \textit{pos} est la position du mot dans la phrase et $n$ le numéro de la dimension de la matrice de Word Embedding.
 
 \subsection{Partie Encoder}
 
 Soit $\dm$ la taille des vecteurs représentant les mots en entrée du Transformer.
 
-La partie grise de la figure \ref{fig:transformer} est la partie Encoder. Elle est constituée d'une pile de $N$ blocs appelés \og Encoder \fg{}.
+La partie grise de la figure \ref{fig:transformer} est la partie Encoder. Elle est constituée d'une pile de $N$ blocs appelés \textit{Encoder}.
 Chaque bloc est constitué de deux couches, à savoir :
 \begin{itemize}
 \item Une Multi-Head Attention
@@ -431,7 +431,7 @@ Nous allons commencer par expliquer le calcul d'une seule Attention (aussi appel
 
 \textbf{Self-Attention} \\
 
-Pour chaque vecteur en entrée, trois autres vecteurs sont calculés. Ces vecteurs sont nommés \og Query, Key et Value \fg{}.
+Pour chaque vecteur en entrée, trois autres vecteurs sont calculés. Ces vecteurs sont nommés \textit{Query, Key} et \textit{Value}.
 Ces trois vecteurs vont permettre de calculer \textbf{l'Attention}.
 Ils sont notés respectivement $q_i, k_i$ et $v_i$, où $i$ est l'indice du vecteur d'entrée. $q_i$ et $k_i$ sont de dimension
 $d_k \leq \dm$ et $v_i$ est de dimension $d_v \leq \dm$.
@@ -455,7 +455,7 @@ L'Attention, telle que définie dans l'article \cite{vaswani2017attention}, est 
 
 \[ \text{softmax}\left( \frac{Q \cdot K^T}{\sqrt{d_k}} \right) V \]
 
-Ainsi, chaque vecteur en entrée se voit attribuer un \og score \fg{} d'Attention. Le score du vecteur $x_i$ dépend de $x_i$ mais
+Ainsi, chaque vecteur en entrée se voit attribuer un \textit{score} d'Attention. Le score du vecteur $x_i$ dépend de $x_i$ mais
 aussi des autres $x_j$ pour $1 \leq i \neq j \leq N$. Cependant, la dépendance du score de $x_i$ est parfois si forte que les
 dépendances issues des vecteurs $x_j$ sont négligeables, ce qui n'est pas souhaitable, car nous souhaitons
 conserver ces autres dépendances. Par exemple, c'est le cas d'un pronom relatif (comme \og Elle \fg{}) qui doit se référer
@@ -492,7 +492,7 @@ Cette procédure est effectuée $N$ fois.
 
 
 Un vecteur final est issu des blocs d'Encoder. Ce vecteur est projeté dans un espace de dimension la taille du vocabulaire,
-à l'aide du Linear layer. Nous obtenons alors le vecteur \og logit \fg{}. Ce vecteur correspond aux scores associés
+à l'aide du Linear layer. Nous obtenons alors le vecteur \textit{logit}. Ce vecteur correspond aux scores associés
 à chaque mot du vocabulaire.
 
 Enfin, ces valeurs sont transformés en probabilités à l'aide de la couche softmax. Ainsi, le vecteur final est un
@@ -535,13 +535,13 @@ a l' age de 31 ans , a barcelone , il est touche par l' esprit prophetique apres
 Pour une prise en main plus facile, le jeu de données est prétraité :
 tous les caractères sont en minuscules, et les mots et les signes de
 ponctuation sont séparés (en anglais, ce traitement s'appelle la
-\emph{tokenization} d'un texte).
+\textit{tokenization} d'un texte).
 
 \hypertarget{algorithmes-et-hyperparamuxe8tres}{%
 \subsection{Algorithmes et
 hyperparamètres}\label{algorithmes-et-hyperparamuxe8tres}}
 
-Nous avons implémenté l'algorithme \textbf{n-gram} en faisant varier n.
+Nous avons implémenté l'algorithme \textbf{n-gram} en faisant varier $n$.
 
 Nous avons également implémenté l'algorithme du Transformer avec pour
 hyperparamètres :
@@ -571,39 +571,34 @@ carte graphique utilisée.
 
 L'entraînement a pris 6 heures sur une carte graphique GTX 1070.
 
-\hypertarget{impluxe9mentation}{%
-\subsection{Implémentation}\label{impluxe9mentation}}
-
-Nous avons utilisé le langage Python pour mettre en place les deux
-algorithmes.
+\subsection{Implémentation}
 
 Dans le cas du transformer, nous avons choisi d'utiliser les deux
-\emph{frameworks} majeurs de Deep Learning en Python: \textbf{PyTorch}
-et \textbf{Tensorflow}. Les deux ont leurs avantages et leurs inconvénients
+\textit{frameworks} majeurs de Deep Learning en Python: \textbf{PyTorch}
+et \textbf{TensorFlow}. Les deux ont leurs avantages et leurs inconvénients
 mais tous deux sont intéressants à connaître. Plutôt que d’en choisir un,
 nous avons donc décidé de nous séparer en deux équipes et de coder le
 modèle deux fois, une fois pour chacun des deux outils.
 
-Dans les deux cas, nous avons utilisé pour encoder les mots la méthode
-des Subwords, avec une taille de vocabulaire de 1000.
 
 \newpage
 
-\hypertarget{ruxe9sultats}{%
-\subsection{Résultats}\label{ruxe9sultats}}
+\subsection{Résultats avec TensorFlow (Subword Encoding)}
 
-\hypertarget{n-gram}{%
-\subsubsection{N-Gram}\label{n-gram}}
+Dans le cas de TensorFlow, nous avons utilisé pour encoder les mots la méthode
+des Subwords, avec une taille de vocabulaire de 1000.
 
-\textbf{Performance quantitative} \\
+\subsubsection{N-Gram}
+
+\noindent{}\textbf{Performance quantitative} \\
 
 
 Les perplexités obtenues par le modèle n-gram sont, en fonction du
-paramètre n, sont répertoriés dans le tableau ci-dessous.
+paramètre $n$, sont répertoriés dans le tableau ci-dessous.
 
 \begin{center}
   \begin{tabular}{l|ll}
-    n & \text{train} & \text{test} \\
+    $n$ & \text{train} & \text{test} \\
     \hline
     2 & 378.72 & 381.17 \\
     3 & 141.43 & 1122.47 \\
@@ -611,12 +606,12 @@ paramètre n, sont répertoriés dans le tableau ci-dessous.
   \end{tabular}
 \end{center}
 
-Le \og nombre de paramètres \fg{} d'un modèle n-gram est de l'ordre de
+Le nombre de paramètres d'un modèle n-gram est de l'ordre de
 $V^n!$), où $V$ (ici, 815) est la taille du vocabulaire.
 
 Ainsi, lorsque $n$ grandit, les degrés de liberté du modèle augmentent
 exponentiellement et le modèle se rapproche de l'apprentissage par coeur
-(\emph{overfitting}) qui se manifeste par une performance bien meilleure
+(\textit{overfitting}) qui se manifeste par une performance bien meilleure
 sur le training set que sur le test set.
 
 Ici, on voit ce phénomène arriver très nettement dès \(n=3\), et à un
@@ -641,7 +636,7 @@ Pour référence :
 
 Ainsi, le nombre de degrés de liberté du modèle atteint le même ordre
 de grandeur que le nombre de tokens dans le jeu de données (un critère
-approximatif du potentiel d'\emph{overfitting}) dès \(n=3\), ce qui
+approximatif du potentiel d'\textit{overfitting}) dès \(n=3\), ce qui
 confirme ce que l'on observe.
 
 Ceci explique pourquoi, en pratique (par exemple dans le cas des modèles
@@ -708,7 +703,7 @@ La perplexité obtenue par le Transformer est :
 \end{itemize}
 
 La perplexité n'est que très peu meilleure sur le training set que sur
-le test set, ce qui confirme l'absence d'\emph{overfitting} à laquelle
+le test set, ce qui confirme l'absence d'\textit{overfitting} à laquelle
 on pouvait s'attendre étant donnée la taille importante du jeu de
 données et le petit nombre d'epochs d'entraînement.
 
@@ -765,8 +760,168 @@ le modèle génératif a une fonction de perte faite uniquement pour
 encourager le réalisme des sorties, mais pas leur diversité.
 
 Il est plus surprenant qu'il arrive dans le cas de ce modèle. C'est un
-cas clair d'\emph{underfitting} qui montre que le modèle pourrait
+cas clair d'\textit{underfitting} qui montre que le modèle pourrait
 bénéficier d'un temps d'entraînement plus long.
+
+\subsection{Résultats PyTorch (Word Encoding)}
+
+Le Transformer codé en TensorFlow et décrit précédemment utilise les Subwords
+comme méthode d’encodage. Une approche différente a été choisie pour le
+développement du Transformer en PyTorch. En effet, celui-ci exploite comme
+encodage des mots entiers (Word Level). De la même manière, le modèle n-gram
+décrit dans la suite sera basé sur une représentation des mots entiers
+pour avoir un élément de comparaison cohérent.
+
+Le vocabulaire utilisé par les modèles n-gram et le modèle transformer
+est le même : il correspond aux 30.000 mots les plus fréquents
+dans les données d'entraînement.
+
+Une telle taille de vocabulaire permet de couvrir suffisamment de mots du langage
+courant (avec quelques éléments propres à Wikipedia comme une plus grande utilisation de dates).
+Néanmoins, cette taille de vocabulaire accroît considérablement la taille du transformer
+par rapport à un modèle basé sur les Subwords (vocabulaire de quelques milliers de subwords), ce qui rend l’apprentissage plus long. Il y a un arbitrage à trouver entre meilleure représentation de la langue et temps d’apprentissage plus long.
+
+Les calculs de perplexités sont effectués sur les mêmes données après avoir entraîné le modèle transformer comme les modèles n-gram sur les mêmes textes.
+
+\subsubsection{N-Gram}
+
+\noindent{}\textbf{Performance quantitative} \\
+
+Les perplexités obtenues par le modèle n-gram sont, en fonction du
+paramètre $n$:
+
+\begin{center}
+  \begin{tabular}{l|ll}
+    $n$ & \text{train} & \text{test} \\
+    \hline
+    2 & 79.6 & 89.1 \\
+    3 & 23.9 & 98.8 \\
+    4 & 6.12 & 323.3
+  \end{tabular}
+\end{center}
+
+De la même manière que dans le cas du Subwords encoding précédent,
+on voit que si les performances sur les données d'entrainement augmentent avec $n$, les performances
+sur les données de tests suivent une tendance inverse. Les modèles ont clairement surappris pour $n>2$.  \\
+
+\noindent{}\textbf{Performance qualitative} \\
+
+Voici quelques extraits générés par le meilleur modèle n-gram parmi les précédents, soit pour $n=2$. \\
+
+\noindent{}\ding{112} \texttt{Génération Greedy}
+
+\begin{quotation}
+"A l'age de 5 ans , elle invente" $\rightarrow$ " par le $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ ,"
+\end{quotation}
+
+\vspace{0.4cm}
+
+\noindent{}\ding{112} \texttt{Génération Sample (top$_{k=5}$)}  \\
+
+La génération sample évite les boucles et réduit les problèmes d'overfitting, comme expliqué plus haut dans ce rapport.
+
+\begin{quotation}
+"A l'age de 5 ans , elle invente" $\rightarrow$ "l et a l ' ete un monument aux mains nues ( v. smith et $<$unk$>$ est , par un ecrivain et blanchiment d ' eglise est l ' ukraine alimente l ' experience de poursuite penale . huit des carottes de mettre en 1536 . en effet stereo hearts , elle etait de sensibilisation du championnat du capitaine de bilan ) consacre a $<$unk$>$ $<$unk$>$ ( en 1212 christian $<$unk$>$ , $<$unk$>$ tt devait permettre de zurich en france des municipales de marseille . achille sur un poste de $<$unk$>$ et petit-fils mineur pour inspecter le danemark publie en 2008 "
+\end{quotation}
+
+\vspace{0.4cm}
+
+\noindent{}\ding{112} \texttt{Génération Sample (top$_{k=5}$) sans le caractère <unk>}  \\
+
+Malgré une taille de vocabulaire de 30.000, le nombre de mots qui n’appartiennent pas au vocabulaire reste très important et le modèle tend donc à attribuer une probabilité relativement forte au token <unk> associé à ces mots. Pour y remédier au moment de générer un texte qui fasse sens, on peut simplement mettre à zéro le poids associé à ce token, comme nous l’avons fait pour la génération ci-dessous :
+
+\begin{quotation}
+"A l'age de 5 ans , elle invente" $\rightarrow$ " a venir ;)"
+\end{quotation}
+
+\subsubsection{Transformer}
+
+\paragraph{Hyperparamètres}
+
+Notre modèle a pour hyperparamètres :
+\begin{itemize}
+\item
+  \(N = 2\)
+\item
+  \(d_{model} = 64\)
+\item
+  \(H = 8\)
+\item
+  \(max_length = 8\)
+\item
+  \(vocab\_size = 30 000\)
+\item
+  \texttt{ff\_hidden\_size} $ = 256$
+\item
+  \texttt{n\_epochs} $ = 4$
+\item
+  Optimizer: Adam
+\item
+  \texttt{learning\_rate} $ = 0.01 $
+\item
+  \texttt{batch\_size} $ = 512 $
+\end{itemize}
+
+Le code a été écrit de manière à pouvoir l’exécuter sur GPU. La mémoire de notre carte graphique
+(une GTX 1050) étant insuffisante pour un modèle basé sur un vocabulaire supérieur à
+$20\,000$ mots, nous avons eu recours à Google Colab.
+
+Nous avons entraîné le transformer sur 90\% du dataset sur 6 epochs en enregistrant
+le modèle à chaque epoch parcourue. L'entraînement sur une epoch dure une quarantaine de minutes.
+
+L’erreur de test la plus faible a été obtenue pour le modèle entraîné sur 4 epochs. \\
+
+\noindent{}\textbf{Performance quantitative} \\
+
+La perplexité obtenue par le Transformer est :
+
+\begin{itemize}
+\item
+  \texttt{train}: \(27.7\)
+\item
+  \texttt{test}: \(26.4\)
+\end{itemize}
+
+On peut faire des observations similaires au modèle TensorFow :
+
+La perplexité n'est pas meilleure sur le training set que sur
+le test set, ce qui confirme l'absence d'\textit{overfitting} à laquelle
+on pouvait s'attendre étant donnée la taille importante du jeu de
+données et le petit nombre d'epochs d'entraînement.
+
+Sur le test set, elle est bien inférieure à la
+meilleure perplexité des modèles n-gram, ce qui confirme ce
+à quoi l'on pouvait s'attendre : que le modèle Transformer est capable
+de modéliser le langage naturel bien mieux que le modèle naïf qu'est
+n-gram. \\
+
+\noindent{}\textbf{Performance qualitative} \\
+
+\textbf{Exemples} \\
+
+\noindent{}\ding{112} \texttt{Génération Greedy}
+
+\begin{quotation}
+"A l'age de 5 ans , elle invente" $\rightarrow$  “de la $<$unk$>$ . il est aussi un homme politique francais de la ville de $<$unk$>$ . il est nomme en $<$unk$>$ , le $<$unk$>$ et le $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$ , $<$unk$>$”
+\end{quotation}
+
+\vspace{0.4cm}
+
+\noindent{}\ding{112} \texttt{Génération Sample (top$_{k=5}$)}  \\
+
+\begin{quotation}
+"A l'age de 5 ans , elle invente" $\rightarrow$ “des `` $<$unk$>$ `` . le film est un homme politique allemand de $<$unk$>$ et la region de $<$unk$>$ . le premier album du monde de la $<$unk$>$ , il s ' agit d ' une nouvelle part entiere de la ville de $<$unk$>$ . il est classe par des autres nations unies , qui est un footballeur international francais de l ' academie de l ' art de $<$unk$>$ , en particulier , il devient membre de la $<$unk$>$ et le $<$unk$>$ et les $<$unk$>$ . il se presente dans la meme ecole d ' art , le roi”
+\end{quotation}
+
+\vspace{0.4cm}
+
+\noindent{}\ding{112} \texttt{Génération Sample (top$_{k=5}$) sans le caractère <unk>}  \\
+
+\begin{quotation}
+"A l'age de 5 ans , elle invente" $\rightarrow$ “de la ville de montreal . il est nomme au cours du mois de septembre 2017 , le premier tour d ' art et de l ' universite de la ville de lyon . le groupe est le `` grand prix `` . en 2007 , les deux premieres mentions et des autres communes d ' un nouveau record du monde de l ' equipe de l ' equipe du monde de hockey . le film , la commune se situe dans le departement de la province de l ' ouest ( `` `` ) et `` de `` ,”
+\end{quotation}
+
+Ici encore, bien qu'elles ne fassent pas sens sur le long terme, les générations du transformer sont plus construites, suivent davantage les règles syntaxiques que les générations des modèles n-gram.
 
 
 
