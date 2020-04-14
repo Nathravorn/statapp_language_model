@@ -49,4 +49,6 @@ def plot_entropy_distribution_over_layers(attentions):
     df = pd.DataFrame(average_entropy)
     
     fig, ax = plot_quantiles(df)
+    ax.set_xlabel("Layer")
+    ax.set_ylabel("Entropy")
     return fig, ax
