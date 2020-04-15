@@ -20,4 +20,4 @@ def compute_entropy(array, axis=-1, epsilon=0.001):
         >>> compute_entropy(arr)
         array([0.3230885 , 0.69114918])
     """
-    return - (array * np.log(array + epsilon)).sum(axis=-1)
+    return - (array * np.log(array + epsilon)).sum(axis=axis)

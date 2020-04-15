@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
+from .entropy import compute_entropy
 
 def plot_quantiles(df, levels=[0.05, 0.1, 0.25]):
     """Plot a dataframe's aggregated column values, with mean and quantiles
