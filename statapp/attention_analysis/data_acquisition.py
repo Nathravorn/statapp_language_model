@@ -16,13 +16,12 @@ def get_tokenizer_and_model(model_name):
     return tokenizer, model
 
 
-def get_attentions(text, model_name="xlm-roberta-base", seq_length=512, batch_size=8, as_array=True, verbose=True):
+def get_attentions(tokens, model, seq_length=512, batch_size=8, as_array=True, verbose=True):
     """Run specified Transformer model on a given text and output its attention values for that text.
     
     Args:
-        text (str): Text to pass to the model.
-        model_name (str): model_name argument passed to `get_tokenizer_and_model`.
-            Default: "xlm-roberta-base".
+        tokens (list of ints): Output of tokenizer.encode(). Tokens to pass to the model.
+        model (huggingface/transformers Model): Model to run on tokens.
         seq_length (int): Length (in number of tokens) of sequences to cut the text into.
             Default: 512.
         batch_size (int): Size of the batches to pass to the model. Drastically improves performance at the cost of memory.
@@ -43,10 +42,6 @@ def get_attentions(text, model_name="xlm-roberta-base", seq_length=512, batch_si
             of arrays of shape: (n_layers, n_heads, seq_length, seq_length).
             Representing:       (layer   , head   , position  , position  ).
     """
-    tokenizer, model = get_tokenizer_and_model(model_name)
-    
-    tokens = tokenizer.encode(text)
-    
     sequences = [
         tokens[i:i+seq_length]
         for i in range(0, len(tokens), seq_length)
