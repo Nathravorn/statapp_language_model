@@ -16,7 +16,7 @@ def get_tokenizer_and_model(model_name):
     return tokenizer, model
 
 
-def get_attentions(text, model_name="xlm-roberta-base", seq_length=512, batch_size=8, as_array=True):
+def get_attentions(text, model_name="xlm-roberta-base", seq_length=512, batch_size=8, as_array=True, verbose=True):
     """Run specified Transformer model on a given text and output its attention values for that text.
     
     Args:
@@ -29,6 +29,8 @@ def get_attentions(text, model_name="xlm-roberta-base", seq_length=512, batch_si
             Default: 8.
         as_array (bool): Whether to throw away the last part of the input (which is not of length seq_length)
             in order to return attentions as a numpy array instead of a list. Recommended.
+            Default: True.
+        verbose (bool): Whether to print progressbar.
             Default: True.
     
     Returns:
@@ -60,7 +62,7 @@ def get_attentions(text, model_name="xlm-roberta-base", seq_length=512, batch_si
     
     outputs = [
         model(inp)
-        for inp in tqdm(inputs, desc="Running model")
+        for inp in tqdm(inputs, desc="Running model", disable=not verbose)
     ]
     
     attentions = [
