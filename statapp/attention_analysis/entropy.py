@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from statapp.common.utils import array_to_multi_indexed_series
 
 def compute_entropy(array, axis=-1, epsilon=0.001):
     """Calculate entropy along specified axis of given array.
@@ -21,3 +22,12 @@ def compute_entropy(array, axis=-1, epsilon=0.001):
         array([0.3230885 , 0.69114918])
     """
     return - (array * np.log(array + epsilon)).sum(axis=axis)
+
+def get_entropy_df(attentions, **kwargs):
+    """Wrapper around compute_entropy to return a pretty DataFrame of entropies based on a numpy array of attentions.
+    """
+    entropy = compute_entropy(attentions, **kwargs)
+    entropy = array_to_multi_indexed_series(entropy, names=["batch", "layer", "head", "pos"], val_name="entropy")
+    df = entropy.reset_index()
+    
+    return df
