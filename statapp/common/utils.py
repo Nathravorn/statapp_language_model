@@ -81,3 +81,56 @@ def pad_or_cut(seq, seq_length, padder=[0]):
         "abc.."
     """
     return seq[:seq_length] + padder * max(seq_length - len(seq), 0)
+
+
+def array_to_multi_indexed_series(array, names=None, val_name=None, number_from_1=False):
+    """Convert a numpy array with an arbitrary number of dimensions to a pd.Series object with
+    a MultiIndex representing all the dimensions of the input array. Can be easily reshaped into a
+    DataFrame with desired columns using reset_index.
+
+    Args:
+        array (np.array): Multi-dimensional array to turn into a Series.
+        names (list of strings): Names of the created index levels.
+            If not None, must be of the same length as the number of dimensions of the input array.
+            If None, leave unnamed.
+            Default: None.
+        val_name (str): Name of the returned Series.
+            Will be the name of the value column if reset_index is used on the returned Series.
+            If None, leave unnamed.
+            Default: None.
+        number_from_1 (bool): Whether to number the index starting from 1 instead of 0.
+            This may make it more human-readable at the cost of losing indexing equivalence with the
+            input array.
+            Default: False.
+    
+    Examples:
+        >>> a = np.array([[0.1, 0.9], [0.5, 0.5]])
+        >>> array_to_multi_indexed_series(a, ["f", "s"], "val")
+        f  s
+        0  0    0.1
+           1    0.9
+        1  0    0.5
+           1    0.5
+       Name: val, dtype: float64
+       
+       >>> a = np.random.randn(2, 2, 2, 2)
+       >>> a[0, 0, 1, 1]
+       2.1682415236887196
+       >>> array_to_multi_indexed_series(a)[0, 0, 1, 1]
+       2.1682415236887196
+    """
+    if names is not None:
+        assert len(names) == len(array.shape)
+    
+    start = 1 if number_from_1 else 0
+    
+    iterables = [range(start, dim+start) for dim in array.shape]
+    index = pd.MultiIndex.from_product(iterables, names=names)
+    
+    srs = pd.Series(array.reshape(-1), index=index)
+    
+    if val_name is not None:
+        srs = srs.rename(val_name)
+    
+    return srs
+    
