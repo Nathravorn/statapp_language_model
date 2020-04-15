@@ -134,4 +134,22 @@ def array_to_multi_indexed_series(array, names=None, val_name=None, number_from_
         srs = srs.rename(val_name)
     
     return srs
+
+
+def survival_function(srs):
+    """Return the survival probabilities of a data series.
     
+    Args:
+        srs (array-like): Series to analyze. Index is irrelevant
+    
+    Returns:
+        pd.Series: Index: Ordered unique values in the original series.
+                   Values: Probability of being >= corresponding index value.
+    """
+    srs = pd.Series(srs).dropna()
+    
+    n = len(srs)
+    ranks = rankdata(srs) - 1
+    survival = 1 - (ranks / (n - 1))
+    
+    return pd.Series(survival, index=srs).sort_index()
