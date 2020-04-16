@@ -153,4 +153,6 @@ def survival_function(srs):
     ranks = rankdata(srs) - 1
     survival = 1 - (ranks / (n - 1))
     
-    return pd.Series(survival, index=srs).sort_index()
+    survival = pd.Series(survival, index=srs).sort_index()
+    survival = survival.loc[~survival.index.duplicated()]
+    return survival
