@@ -34,11 +34,13 @@ def get_attentions(tokens, model, seq_length=64, batch_size=64, as_array=True, v
     
     Returns:
         if as_array == True:
-            Array of shape: (n_batches, n_layers, n_heads, seq_length, seq_length),
-            Representing:   (batch    , layer   , head   , position  , position  ).
+            Array of shape: (n_sequences, n_layers, n_heads, seq_length, seq_length),
+            Representing:   (sequence   , layer   , head   , position  , position  ).
+            
+            The first dimension does not depend on batch_size.
 
         else:
-            list (of length num_sequences*batch_size)
+            list (of length n_sequences)
             of arrays of shape: (n_layers, n_heads, seq_length, seq_length).
             Representing:       (layer   , head   , position  , position  ).
     """

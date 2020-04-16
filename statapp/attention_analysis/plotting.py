@@ -38,8 +38,8 @@ def plot_entropy_distribution_over_layers(attentions):
     
     Args:
         attentions (np.array): Model attentions.
-            Array of shape: (n_batches, n_layers, n_heads, seq_length, seq_length),
-            Representing:   (batch    , layer   , head   , position  , position  ).
+            Array of shape: (n_sequences, n_layers, n_heads, seq_length, seq_length),
+            Representing:   (sequence   , layer   , head   , position  , position  ).
     
     Returns:
         Figure: matplotlib Figure object for the graph.

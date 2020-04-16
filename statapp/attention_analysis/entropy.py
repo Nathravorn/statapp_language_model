@@ -27,7 +27,7 @@ def get_entropy_df(attentions, **kwargs):
     """Wrapper around compute_entropy to return a pretty DataFrame of entropies based on a numpy array of attentions.
     """
     entropy = compute_entropy(attentions, **kwargs)
-    entropy = array_to_multi_indexed_series(entropy, names=["batch", "layer", "head", "pos"], val_name="entropy")
+    entropy = array_to_multi_indexed_series(entropy, names=["seq", "layer", "head", "pos"], val_name="entropy")
     df = entropy.reset_index()
     
     return df
