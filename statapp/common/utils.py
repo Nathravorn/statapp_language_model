@@ -4,6 +4,7 @@ import json
 import datetime
 import numpy as np
 import pandas as pd
+from scipy.stats import rankdata
 
 class NumpyEncoder(json.JSONEncoder):
     """Special json encoder for numpy types. Useful for logging numpy arrays.
