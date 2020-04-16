@@ -16,21 +16,21 @@ def get_tokenizer_and_model(model_name):
     return tokenizer, model
 
 
-def get_attentions(tokens, model, seq_length=512, batch_size=8, as_array=True, verbose=True):
+def get_attentions(tokens, model, seq_length=64, batch_size=64, as_array=True, verbose=False):
     """Run specified Transformer model on a given text and output its attention values for that text.
     
     Args:
         tokens (list of ints): Output of tokenizer.encode(). Tokens to pass to the model.
         model (huggingface/transformers Model): Model to run on tokens.
         seq_length (int): Length (in number of tokens) of sequences to cut the text into.
-            Default: 512.
+            Default: 64.
         batch_size (int): Size of the batches to pass to the model. Drastically improves performance at the cost of memory.
-            Default: 8.
+            Default: 64.
         as_array (bool): Whether to throw away the last part of the input (which is not of length seq_length)
             in order to return attentions as a numpy array instead of a list. Recommended.
             Default: True.
         verbose (bool): Whether to print progressbar.
-            Default: True.
+            Default: False.
     
     Returns:
         if as_array == True:
