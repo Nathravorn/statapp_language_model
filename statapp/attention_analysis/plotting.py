@@ -17,7 +17,7 @@ def plot_quantiles(df, levels=[0.05, 0.1, 0.25], color="C0"):
         Axes: matplotlib Axes object for the graph.
     """
     fig, ax = plt.subplots(figsize=(16, 9))
-    plt.plot(df.index, df.mean(1), label="mean", lw=2)
+    plt.plot(df.index, df.mean(1), label="mean", lw=2, c=color)
     levels = sorted(levels, reverse=True)
     for i, level in enumerate(levels):
         plt.fill_between(
