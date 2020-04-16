@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from .entropy import compute_entropy
 
-def plot_quantiles(df, levels=[0.05, 0.1, 0.25]):
+def plot_quantiles(df, levels=[0.05, 0.1, 0.25], color="C0"):
     """Plot a dataframe's aggregated column values, with mean and quantiles
     around it.
     
@@ -24,7 +24,7 @@ def plot_quantiles(df, levels=[0.05, 0.1, 0.25]):
             df.index,
             df.quantile(level, axis=1),
             df.quantile(1-level, axis=1),
-            color="C0",
+            color=color,
             alpha=1/2**(i+1),
             label="{:.0%}".format(1-level),
         )
@@ -33,7 +33,7 @@ def plot_quantiles(df, levels=[0.05, 0.1, 0.25]):
     
     return fig, ax
 
-def plot_entropy_distribution_over_layers(attentions):
+def plot_entropy_distribution_over_layers(attentions, color="C0"):
     """Plot the distribution of head's entropy values over the layers of the model based on particular attention values.
     
     Args:
@@ -49,7 +49,7 @@ def plot_entropy_distribution_over_layers(attentions):
     average_entropy = entropy.mean(axis=-1).mean(axis=0) # (layer, head)
     df = pd.DataFrame(average_entropy)
     
-    fig, ax = plot_quantiles(df)
+    fig, ax = plot_quantiles(df, color=color)
     ax.set_xlabel("Layer")
     ax.set_ylabel("Entropy")
     return fig, ax
