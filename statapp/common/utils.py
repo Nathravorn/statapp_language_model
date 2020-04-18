@@ -150,8 +150,8 @@ def survival_function(srs):
     srs = pd.Series(srs).dropna()
     
     n = len(srs)
-    ranks = rankdata(srs) - 1
-    survival = 1 - (ranks / (n - 1))
+    ranks = rankdata(srs, method="min") - 1
+    survival = 1 - (ranks / (n))
     
     survival = pd.Series(survival, index=srs).sort_index()
     survival = survival.loc[~survival.index.duplicated()]
