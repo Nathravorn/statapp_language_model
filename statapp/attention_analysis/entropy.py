@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from statapp.common.utils import array_to_multi_indexed_series
+from statapp.attention_analysis.constants import data_file_names, class_ids
 
 def compute_entropy(array, axis=-1, epsilon=0.001):
     """Calculate entropy along specified axis of given array.
@@ -31,3 +32,52 @@ def get_entropy_df(attentions, **kwargs):
     df = entropy.reset_index()
     
     return df
+
+def get_entropy_over_languages(model_name, random_weights=False, batch_size=64, verbose=True):
+    print_if_verbose = lambda *x: print(*x) if verbose else None
+    
+    print_if_verbose("Loading model...")
+    tokenizer, model = get_tokenizer_and_model(model_name, random_weights=random_weights)
+    print_if_verbose("    done.")
+    
+    out = []
+
+    for file_name, language in data_file_names.items():
+        print_if_verbose("Computing entropies for", language + "...")
+        start_time = timer()
+
+        text = "\n".join(load_data(data_path + file_name + "-ud-test-sent_segmented.txt", sample=1, split_on="\n"))
+        tokens = tokenizer.encode(text)
+
+        att = get_attentions(tokens, model, seq_length=64, batch_size=batch_size)
+
+        df = get_entropy_df(att)
+        df["language"] = language
+        
+        df = (
+            df
+            .groupby(["seq", "layer", "head", "language"])
+            .mean()
+            .loc[:, "entropy"]
+            .reset_index()
+        )
+        
+        out.append(df)
+
+        exec_time = timer() - start_time
+        print_if_verbose("    done. ({} seconds)\n".format(exec_time))
+    
+    return pd.concat(out)
+    
+def load_entropy_over_languages(model_name, average_over_heads=True):
+    df = pd.read_hdf("../data/entropy_data/{}.h5".format(model_name), "df")
+    df = df.set_index(["seq", "layer", "head", "language"]).unstack(["layer", "head"])
+    
+    if average_over_heads:
+        df = df.mean(axis=1, level="head")
+    
+    y = df.index.get_level_values("language").tolist()
+    y = list(map(class_ids.get, y))
+    X = df.droplevel("language", axis=0)
+    
+    return X, y
