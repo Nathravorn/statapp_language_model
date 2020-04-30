@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 from statapp.common.utils import array_to_multi_indexed_series
@@ -69,8 +71,8 @@ def get_entropy_over_languages(model_name, random_weights=False, batch_size=64, 
     
     return pd.concat(out)
     
-def load_entropy_over_languages(model_name, average_over_heads=True):
-    df = pd.read_hdf("../data/entropy_data/{}.h5".format(model_name), "df")
+def load_entropy_over_languages(model_name, data_folder, average_over_heads=True):
+    df = pd.read_hdf(os.path.join(data_folder, "entropy_data/{}.h5".format(model_name)), "df")
     df = df.set_index(["seq", "layer", "head", "language"]).unstack(["layer", "head"])
     
     if average_over_heads:
