@@ -1,4 +1,5 @@
 import os
+from timeit import default_timer as timer
 
 import numpy as np
 import pandas as pd
@@ -36,7 +37,7 @@ def get_entropy_df(attentions, **kwargs):
     
     return df
 
-def get_entropy_over_languages(model_name, random_weights=False, batch_size=64, verbose=True):
+def get_entropy_over_languages(model_name, data_folder, random_weights=False, batch_size=64, verbose=True):
     print_if_verbose = lambda *x: print(*x) if verbose else None
     
     print_if_verbose("Loading model...")
@@ -49,7 +50,7 @@ def get_entropy_over_languages(model_name, random_weights=False, batch_size=64, 
         print_if_verbose("Computing entropies for", language + "...")
         start_time = timer()
 
-        text = "\n".join(load_data(data_path + file_name + "-ud-test-sent_segmented.txt", sample=1, split_on="\n"))
+        text = "\n".join(load_data(os.path.join(data_folder, "attention_data", file_name + "-ud-test-sent_segmented.txt", sample=1, split_on="\n"))
         tokens = tokenizer.encode(text)
 
         att = get_attentions(tokens, model, seq_length=64, batch_size=batch_size)
