@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from statapp.common.utils import array_to_multi_indexed_series
 from statapp.attention_analysis.constants import data_file_names, class_ids
+from statapp.attention_analysis.data_acquisition import get_tokenizer_and_model, get_attentions
 
 def compute_entropy(array, axis=-1, epsilon=0.001):
     """Calculate entropy along specified axis of given array.
