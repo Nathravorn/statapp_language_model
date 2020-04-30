@@ -50,7 +50,7 @@ def get_entropy_over_languages(model_name, data_folder, random_weights=False, ba
         print_if_verbose("Computing entropies for", language + "...")
         start_time = timer()
 
-        text = "\n".join(load_data(os.path.join(data_folder, "attention_data", file_name + "-ud-test-sent_segmented.txt", sample=1, split_on="\n"))
+        text = "\n".join(load_data(os.path.join(data_folder, "attention_data", file_name + "-ud-test-sent_segmented.txt", sample=1, split_on="\n")))
         tokens = tokenizer.encode(text)
 
         att = get_attentions(tokens, model, seq_length=64, batch_size=batch_size)
