@@ -7,7 +7,7 @@ from transformers import XLMRobertaModel, XLMRobertaConfig
 from transformers import RobertaConfig, RobertaModel
 
 def get_tokenizer_and_model(model_name, random_weights=False):
-    assert model_name in ["xlm-roberta-base", "roberta-base", "bert-base-multilingual-cased"], "Unrecognized model name: {}".format(model_name)
+    # assert model_name in ["xlm-roberta-base", "roberta-base", "bert-base-multilingual-cased"], "Unrecognized model name: {}".format(model_name)
     
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     config = AutoConfig.from_pretrained(model_name, output_attentions=True)
