@@ -74,8 +74,12 @@ def get_entropy_over_languages(model_name, data_folder, random_weights=False, ba
     
     return pd.concat(out)
     
-def load_entropy_over_languages(model_name, data_folder, average_over_heads=True):
-    df = pd.read_hdf(os.path.join(data_folder, "entropy_data/{}.h5".format(model_name)), "df")
+def load_entropy_over_languages(model_name, data_folder, average_over_heads=True, random_weights=False):
+    folder = os.path.join(data_folder, "entropy_data")
+    if random_weights:
+        folder = os.path.join(folder, "random_weights")
+    
+    df = pd.read_hdf(os.path.join(folder, "{}.h5".format(model_name)), "df")
     df = df.set_index(["seq", "layer", "head", "language"]).unstack(["layer", "head"])
     
     if average_over_heads:
