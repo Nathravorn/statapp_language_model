@@ -5,6 +5,7 @@ import torch
 from transformers import AutoTokenizer, AutoModel, AutoConfig
 from transformers import XLMRobertaModel, XLMRobertaConfig
 from transformers import RobertaConfig, RobertaModel
+from statapp.common.utils import array_to_multi_indexed_series
 
 def get_tokenizer_and_model(model_name, random_weights=False):
     # assert model_name in ["xlm-roberta-base", "roberta-base", "bert-base-multilingual-cased"], "Unrecognized model name: {}".format(model_name)
@@ -80,3 +81,6 @@ def get_attentions(tokens, model, seq_length=64, batch_size=64, as_array=True, v
         attentions = np.concatenate(attentions, axis=0)
     
     return attentions
+
+def attention_to_df(att):
+    return array_to_multi_indexed_series(att, names=["seq", "layer", "head", "pos1", "pos2"], val_name="attention").reset_index()
