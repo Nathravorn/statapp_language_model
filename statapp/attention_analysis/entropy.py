@@ -38,11 +38,11 @@ def get_entropy_df(attentions, **kwargs):
     
     return df
 
-def get_entropy_over_languages(model_name, data_folder, random_weights=False, batch_size=64, verbose=True):
+def get_entropy_over_languages(model_name, data_folder, batch_size=64, verbose=True):
     print_if_verbose = lambda *x: print(*x) if verbose else None
     
     print_if_verbose("Loading model...")
-    tokenizer, model = get_tokenizer_and_model(model_name, random_weights=random_weights)
+    tokenizer, model = get_tokenizer_and_model(model_name)
     print_if_verbose("    done.")
     
     out = []
@@ -74,10 +74,8 @@ def get_entropy_over_languages(model_name, data_folder, random_weights=False, ba
     
     return pd.concat(out)
     
-def load_entropy_over_languages(model_name, data_folder, average_over_heads=True, random_weights=False):
+def load_entropy_over_languages(model_name, data_folder, average_over_heads=True):
     folder = os.path.join(data_folder, "entropy_data")
-    if random_weights:
-        folder = os.path.join(folder, "random_weights")
     
     df = pd.read_hdf(os.path.join(folder, "{}.h5".format(model_name)), "df")
     df = df.set_index(["seq", "layer", "head", "language"]).unstack(["layer", "head"])
