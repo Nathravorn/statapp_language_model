@@ -74,17 +74,37 @@ def get_entropy_over_languages(model_name, data_folder, batch_size=64, verbose=T
     
     return pd.concat(out)
     
-def load_entropy_over_languages(model_name, data_folder, average_over_heads=True):
+def load_entropy_over_languages(model_name, data_folder, average_over_heads=True, average_over_positions=True):
+    """Load saved values for entropies of specified language model.
+    
+    Args:
+        model_name (str): Name of model to load. If ends with "-random", load entropies for the model with random weights.
+        data_folder (str): Path to the "data" folder.
+        average_over_heads (bool): Whether to return a 12-dimensional output.
+            If True, ignore the value of average_over_positions and set it to True.
+            Default: True.
+        average_over_positions (bool): Whether to average over the 64 positions. If False, keep the 64 entropies of the corresponding head.
+            Default: True
+    
+    Returns:
+        pd.DataFrame: Entropy dataset.
+    """
+    average_over_positions = average_over_positions or average_over_heads
+    
     folder = os.path.join(data_folder, "entropy_data")
     
-    df = pd.read_hdf(os.path.join(folder, "{}.h5".format(model_name)), "df")
-    df = df.set_index(["seq", "layer", "head", "language"]).unstack(["layer", "head"])
+    df = pd.read_hdf(os.path.join(folder, "{}.h5".format(model_name)), "df", stop=10000000)
     
-    if average_over_heads:
-        df = df.mean(axis=1, level="head")
+    identifiers = ["layer"]
+    if not average_over_heads:
+        identifiers.append("head")
+    if ("pos" in df) and not (average_over_positions):
+        identifiers.append("pos")
+    
+    df = df.groupby(["seq", "language"] + identifiers).mean()["entropy"].unstack(identifiers)
     
     y = df.index.get_level_values("language").tolist()
     y = list(map(class_ids.get, y))
-    X = df.droplevel("language", axis=0).droplevel(0, axis=1)
+    X = df.droplevel("language", axis=0)
     
     return X, y
