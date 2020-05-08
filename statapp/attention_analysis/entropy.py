@@ -85,6 +85,6 @@ def load_entropy_over_languages(model_name, data_folder, average_over_heads=True
     
     y = df.index.get_level_values("language").tolist()
     y = list(map(class_ids.get, y))
-    X = df.droplevel("language", axis=0)
+    X = df.droplevel("language", axis=0).droplevel(0, axis=1)
     
     return X, y
