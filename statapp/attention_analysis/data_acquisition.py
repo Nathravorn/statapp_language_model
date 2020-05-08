@@ -7,8 +7,26 @@ from transformers import XLMRobertaModel, XLMRobertaConfig
 from transformers import RobertaConfig, RobertaModel
 from statapp.common.utils import array_to_multi_indexed_series
 
-def get_tokenizer_and_model(model_name, random_weights=False):
-    # assert model_name in ["xlm-roberta-base", "roberta-base", "bert-base-multilingual-cased"], "Unrecognized model name: {}".format(model_name)
+def get_tokenizer_and_model(model_name):
+    """Get huggingface tokenizer and model for specified model name.
+    By default, get the model with its pretrained weights, but optionally randomly initialize the weights instead.
+    
+    Args:
+        model_name (str): Name of the model to import.
+            If ends with "-random", instead import the name before that suffix, but with randomly initialized weights.
+            Example:
+            - get_tokenizer_and_model("roberta-base") gets the pretrained tokenizer and model for "roberta-base".
+            - get_tokenizer_and_model("roberta-base-random") gets the pretrained tokenizer and the randomly initialized model for "roberta-base".
+    
+    Returns:
+        transformers Tokenizer object
+        transformers Model object
+    """
+    if model_name.endswith("-random"):
+        model_name = model_name[:-7]
+        random_weights = True
+    else:
+        random_weights = False
     
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     config = AutoConfig.from_pretrained(model_name, output_attentions=True)
