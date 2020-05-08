@@ -93,7 +93,7 @@ def load_entropy_over_languages(model_name, data_folder, average_over_heads=True
     
     folder = os.path.join(data_folder, "entropy_data")
     
-    df = pd.read_hdf(os.path.join(folder, "{}.h5".format(model_name)), "df", stop=10000000)
+    df = pd.read_hdf(os.path.join(folder, "{}.h5".format(model_name)), "df")
     
     identifiers = ["layer"]
     if not average_over_heads:
