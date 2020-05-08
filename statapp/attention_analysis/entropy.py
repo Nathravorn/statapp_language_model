@@ -61,7 +61,7 @@ def get_entropy_over_languages(model_name, data_folder, batch_size=64, verbose=T
         
         df = (
             df
-            .groupby(["seq", "layer", "head", "language"])
+            .groupby(["seq", "layer", "head", "pos", "language"])
             .mean()
             .loc[:, "entropy"]
             .reset_index()
