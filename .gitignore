@@ -1,3 +1,4 @@
 **/.ipynb_checkpoints
 **/__pycache__
 data/fr.train.top1M.txt
+**/*.pyc
