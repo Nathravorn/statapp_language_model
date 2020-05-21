@@ -93,7 +93,7 @@ def load_entropy_over_languages(model_name, data_folder, average_over_heads=True
     
     folder = os.path.join(data_folder, "entropy_data")
     if average_over_positions:
-        print("average_over_positions is True. Loading light version of dataset.")
+        # print("average_over_positions is True. Loading light version of dataset.")
         folder = os.path.join(folder, "light")
     
     df = pd.read_hdf(os.path.join(folder, "{}.h5".format(model_name)), "df")
