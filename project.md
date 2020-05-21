@@ -1,30 +1,36 @@
 # Todo
-## Tensorflow
-    [X] Implement automatic logging of all training attempts
-    [X] Overfit the model on a small dataset -> See `logs/tensorflow_transformer/log.md`
-    [X] Implement output into embedding space -> See `logs/tensorflow_transformer/log.md`
-    [ ] Make SparseCategoricalCrossentropy work and use it
-    [?] Implement masking
+## Tâches recherche
+    [?] Ptet dans un 2e temps, voir si une autre probing task classique (basée sur les vecteurs de contexte) extrait la même information
+    (R)[ ] Régressions par layer, chacun sur 12 entropies
+    (R)[ ] Refaire la tâche des 144 modèles en gardant que les langues latines pour voir si les modèles mono et multi sont plus d'accord
+    (M)[ ] Refaire les régressions avec modèles plus puissants (NN, GBDT)
+    (C)[ ] Comprendre pourquoi on arrive à classifier les modèles monolingues
+        [>] Voir si la "variance" (e.g. nb de tokens uniques) des tokens suffit à predire la langue
+    (N)[ ] Pour tous les modèles, mettre les special tokens au début et à la fin de la phrase avant de passer dans le modèle
+    (N)[ ] Refaire la tâche de Feature Importance en gardant que les langues latines pour voir si les modèles mono et multi sont plus d'accord
+    [ ] Refaire une passe sur les longueurs de phrases
+        [ ] Soit normaliser l'entropie
+            -> Empiriquement
+            -> Ou théoriquement
+        [?] Soit faire des buckets de longueurs différentes
 
-## Common
-    [>] Implement general sampling methods
-        [X] Individual token sampling
-            [X] Implement temperature sampling with fixed k
-            [X] Implement nucleus method in temperature sampling
-            [X] Implement penalized sampling (see CTRL paper section 4.1)
-        [X] Sequence sampling
-            [X] Default
-            [ ] Beam search
-
-## Documentation
-    [ ] Add doc on `common.preprocessing` to README.
-    [ ] Add doc on `common.sampling` to README.
-
+## Tâches admin
+    (RC)[ ] Donner l'output "à venir"
+    [ ] Synthèse
+        (M)[ ] Créer un document "Synthèse" sur cocalc avec table des matières
+    [ ] Rapport
+        (waiting)[ ] Rajouter une section sur nos expériences
+        (R)[ ] Rajouter une introduction expliquant le projet et le sens du rapport et présentant les 3 grands axes (théorie proba, implémentation, expériences)
+            -> Copier coller le rapport de mi-parcours
+    [ ] Dates
+        [ ] Prochaine date Benjamin
+        [ ] Date soutenance
 
 # Ideas on controlling inference
 - Make the model politically correct: discourage bad language or discrimination
 - Impose phonological constraints on the model
     - Force rhymes
+    
     - Force a certain number of syllables
     - Force a stress pattern (e.g. iambic pentameter)
 - Make the model pay attention to what we want at inference time
