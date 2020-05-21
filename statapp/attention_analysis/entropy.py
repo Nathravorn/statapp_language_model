@@ -52,9 +52,8 @@ def get_entropy_over_languages(model_name, data_folder, batch_size=64, verbose=T
         start_time = timer()
 
         text = "\n".join(load_data(os.path.join(data_folder, "attention_data", file_name + "-ud-test-sent_segmented.txt"), sample=1, split_on="\n"))
-        tokens = tokenizer.encode(text)
 
-        att = get_attentions(tokens, model, seq_length=64, batch_size=batch_size)
+        att = get_attentions(text, tokenizer, model, seq_length=64, batch_size=batch_size)
 
         df = get_entropy_df(att)
         df["language"] = language

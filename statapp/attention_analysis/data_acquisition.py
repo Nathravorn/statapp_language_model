@@ -39,11 +39,16 @@ def get_tokenizer_and_model(model_name):
     return tokenizer, model
 
 
-def get_attentions(tokens, model, seq_length=64, batch_size=64, as_array=True, verbose=False):
+def get_attentions(text_or_tokens, tokenizer, model, seq_length=64, batch_size=64, as_array=True, verbose=False):
     """Run specified Transformer model on a given text and output its attention values for that text.
     
     Args:
-        tokens (list of ints): Output of tokenizer.encode(). Tokens to pass to the model.
+        text_or_tokens (str or list of ints): Text to get attentions from of list of token ids.
+            If string, will run tokenizer.convert_tokens_to_ids(tokenizer.tokenize(text)).
+            Else, will use the provided list of ids instead.
+            The list of ids should *not* be the output of tokenizer.encode(text) but rather
+            tokenizer.convert_tokens_to_ids(tokenizer.tokenize(text)).
+        tokenizer (transformers.Tokenizer): Tokenizer object for the model (needed to add special tokens to each sample).
         model (huggingface/transformers Model): Model to run on tokens.
         seq_length (int): Length (in number of tokens) of sequences to cut the text into.
             Default: 64.
@@ -67,8 +72,18 @@ def get_attentions(tokens, model, seq_length=64, batch_size=64, as_array=True, v
             of arrays of shape: (n_layers, n_heads, seq_length, seq_length).
             Representing:       (layer   , head   , position  , position  ).
     """
+    # Convert text to tokens
+    if isinstance(text_or_tokens, str):
+        tokens = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(text_or_tokens))
+    else:
+        tokens = text_or_tokens
+    
+    # Run test to determine how many special tokens there are
+    test_token = tokens[0]
+    num_special_tokens = len(tokenizer.prepare_for_model([test_token])["input_ids"]) - 1
+    
     sequences = [
-        tokens[i:i+seq_length]
+        tokens[i:i+seq_length-num_special_tokens]
         for i in range(0, len(tokens), seq_length)
     ]
     
@@ -76,7 +91,12 @@ def get_attentions(tokens, model, seq_length=64, batch_size=64, as_array=True, v
         sequences = sequences[:-1]
     
     inputs = [
-        torch.tensor(sequences[i:i+batch_size])
+        torch.tensor([
+            tokenizer.prepare_for_model(
+                sequences[i+batch_num]
+            )["input_ids"]
+            for batch_num in range(batch_size)
+        ])
         for i in range(0, len(sequences), batch_size)
     ]
     
@@ -99,6 +119,7 @@ def get_attentions(tokens, model, seq_length=64, batch_size=64, as_array=True, v
         attentions = np.concatenate(attentions, axis=0)
     
     return attentions
+
 
 def attention_to_df(att):
     return array_to_multi_indexed_series(att, names=["seq", "layer", "head", "pos1", "pos2"], val_name="attention").reset_index()
