@@ -6,8 +6,8 @@
     (M)[ ] Refaire les régressions avec modèles plus puissants (NN, GBDT)
     (C)[ ] Comprendre pourquoi on arrive à classifier les modèles monolingues
         [>] Voir si la "variance" (e.g. nb de tokens uniques) des tokens suffit à predire la langue
-    (N)[ ] Pour tous les modèles, mettre les special tokens au début et à la fin de la phrase avant de passer dans le modèle
-    (N)[ ] Refaire la tâche de Feature Importance en gardant que les langues latines pour voir si les modèles mono et multi sont plus d'accord
+    (N)[X] Pour tous les modèles, mettre les special tokens au début et à la fin de la phrase avant de passer dans le modèle
+    (N)[>] Refaire la tâche de Feature Importance en gardant que les langues latines pour voir si les modèles mono et multi sont plus d'accord
     [ ] Refaire une passe sur les longueurs de phrases
         [ ] Soit normaliser l'entropie
             -> Empiriquement
